@@ -1,7 +1,7 @@
 CC := g++
 TARGET := test
 
-SOURCE := testing.cpp WindVector.cpp
+SOURCE := testing.cpp WindVector.cpp Semivariance.cpp
 FIXSOURCE := $(addprefix src/, $(SOURCE))
 
 VPATH := src : include

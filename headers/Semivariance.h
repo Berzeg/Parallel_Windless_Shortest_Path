@@ -1,3 +1,6 @@
+#ifndef SEMIVARIANCE
+#define SEMIVARIANCE
+
 /*
 Hashem Shawqi (hashemshawqi@cmail.carleton.ca)
 School of Computer Science, Carleton University
@@ -11,6 +14,8 @@ class Semivariance
 {
 public:
 	float displacement;
-	float[4] semiVariance;
-	float[4] velocity;
+	float semiVariance[4];
+	float velocity[4];
 };
+
+#endif

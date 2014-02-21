@@ -1,3 +1,6 @@
+#ifndef WIND_VECTOR
+#define WIND_VECTOR
+
 /*
 Hashem Shawqi (hashemshawqi@cmail.carleton.ca)
 School of Computer Science, Carleton University
@@ -16,3 +19,5 @@ public:
 	WindVector( int, int, float, int );
 	~WindVector();
 };
+
+#endif

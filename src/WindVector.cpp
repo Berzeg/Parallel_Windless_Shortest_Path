@@ -1,11 +1,14 @@
 #include "../headers/WindVector.h"
 
-WindVector::WindVector( int x, int y, float magnitude, int bearing )
+WindVector::WindVector( int x, int y, float v[] )
 {
 	this->x = x;
 	this->y = y;
-	this->magnitude = magnitude;
-	this->bearing = bearing;
+
+	for( int i = 0; i < 4; i++ )
+	{
+		velocity[ i ] = v[ i ];
+	}
 }
 
 WindVector::~WindVector() {}

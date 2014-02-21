@@ -16,9 +16,8 @@ class Semivariance
 public:
 	float displacement;
 	float semivariance[4];
-	float velocity[4];
 
-	Semivariance( float, float[], float[] );
+	Semivariance( float, float[] );
 	~Semivariance();
 };
 

@@ -13,7 +13,7 @@ class WindVector
 public:
 	int x;
 	int y;
-	float velocity[4];
+	float velocity[2];
 
 	WindVector( int, int, float[] );
 	~WindVector();

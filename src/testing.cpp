@@ -28,9 +28,9 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 			// using pythagoras
 			float displacement = sqrt( pow( x1 - x2, 2 ) + pow( y1 - y2, 2 ) );
 		
-			float gamma[4];
+			float gamma[2];
 
-			for( int k = 0; k < 4; k++ )
+			for( int k = 0; k < 2; k++ )
 			{
 				// variables for the semivariance equation
 				float v1 = input_data[ i ]->velocity[ k ];
@@ -103,10 +103,8 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 		} else {
 
 			// If the SV is already there, then add to the current SV components
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ NORTH ] += sv->semivariance[ NORTH ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ EAST ] += sv->semivariance[ EAST ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ SOUTH ] += sv->semivariance[ SOUTH ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ WEST ] += sv->semivariance[ WEST ];
+			bucketed_semivariances[ sv_insert_index ]->semivariance[ X_COMPONENT ] += sv->semivariance[ X_COMPONENT ];
+			bucketed_semivariances[ sv_insert_index ]->semivariance[ Y_COMPONENT ] += sv->semivariance[ Y_COMPONENT ];
 
 		}
 
@@ -128,10 +126,8 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 			Semivariance* bucket = bucketed_semivariances[ index ];
 
 			// All average calculations have division, this is our division
-			bucket->semivariance[ NORTH ] /= count;
-			bucket->semivariance[ EAST ] /= count;
-			bucket->semivariance[ SOUTH ] /= count;
-			bucket->semivariance[ WEST ] /= count;
+			bucket->semivariance[ X_COMPONENT ] /= count;
+			bucket->semivariance[ Y_COMPONENT ] /= count;
 		}
 	}
 
@@ -140,23 +136,23 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 
 int main(int argc, char * argv[])
 {
-	/*float velocity[] = { 9.0, 1.2, 3.4, 5.6 };
+	/*float velocity[] = { 9.0, 1.2 };
 	WindVector* wv = new WindVector( 1, 1, velocity );
 
 	cout << "testing WindVector class:\n";
 	cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
-	for (int i = 0; i < 4; i++ )
+	for (int i = 0; i < 2; i++ )
 	{
 		cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
 	}	
 
 
-	float gamma[] = { 1.2, 3.4, 5.6, 7.8 };
+	float gamma[] = { 1.2, 3.4 };
 	Semivariance* sv = new Semivariance( 3.1, gamma );
 
 	cout << "Testing semivariance class: \n";
 	cout << "displacement: " << sv->displacement << "\n";
-	for (int i = 0; i < 4; i++ )
+	for (int i = 0; i < 2; i++ )
 	{
 		cout << "semivariance[" << i << "]: " << sv->semivariance[i] << "\n";
 	}
@@ -164,9 +160,9 @@ int main(int argc, char * argv[])
 
 	// testing the semivariance method
 	// create another wind vector in order to establish a semivariance with wv
-	float velocity2[] = { 4.2, 3.3, 1.0, 2 };
+	float velocity2[] = { 4.2, 3.3 };
 	WindVector* wv2 = new WindVector( 5, 7, velocity2 );
-	float velocity3[] = { 4.4, 9.1, 6.7, 2 };
+	float velocity3[] = { 4.4, 9.1 };
 	WindVector* wv3 = new WindVector( 3, 12, velocity3 );
 	WindVector* wv4 = new WindVector( 12, 5, velocity3 );
 
@@ -185,15 +181,15 @@ int main(int argc, char * argv[])
 
 	// Testing the bucketing function with 6 semivariances to which I've precalculated the 
 	// correct output as: 
-	// s1 = 56.7, e1 = 42, s1 = 27.7, w1 = 52
-	// s2 = 50.3, e2 = 58.3, s2 = 66.3, w2 = 37.7
+	// x1 = 56.7, y1 = 42
+	// x2 = 50.3, y2 = 58.3
 
-	float component_sv1[4] = { 12, 34, 56, 78 };
-	float component_sv2[4] = { 90, 13, 24, 57 };
-	float component_sv3[4] = { 68, 79, 3, 21 };
-	float component_sv4[4] = { 43, 65, 87, 9 };
-	float component_sv5[4] = { 17, 28, 39, 40 };
-	float component_sv6[4] = { 91, 82, 73, 64 };
+	float component_sv1[] = { 12, 34 };
+	float component_sv2[] = { 90, 13 };
+	float component_sv3[] = { 68, 79 };
+	float component_sv4[] = { 43, 65 };
+	float component_sv5[] = { 17, 28 };
+	float component_sv6[] = { 91, 82 };
 
 	Semivariance* sv1 = new Semivariance( 2, component_sv1 );
 	Semivariance* sv2 = new Semivariance( 3, component_sv2 );
@@ -208,7 +204,7 @@ int main(int argc, char * argv[])
 	vector <Semivariance*> average_SVs = bucket_sort( 10, 5, sv_collection );
 
 	cout << "The components of the first SV are:\n";
-	cout << "North: " << average_SVs[0]->semivariance[ NORTH ] << ", East: " <<  average_SVs[0]->semivariance[ EAST ] << ", South: " << average_SVs[0]->semivariance[ SOUTH ] << ", West: " << average_SVs[0]->semivariance[ WEST ] << "\n";
+	cout << "X_COMPONENT: " << average_SVs[0]->semivariance[ X_COMPONENT ] << ", Y_COMPONENT: " <<  average_SVs[0]->semivariance[ Y_COMPONENT ] <<  "\n";
 	cout << "The components of the second SV are:\n";
-	cout << "North: " << average_SVs[1]->semivariance[ NORTH ] << ", East: " <<  average_SVs[1]->semivariance[ EAST ] << ", South: " << average_SVs[1]->semivariance[ SOUTH ] << ", West: " << average_SVs[1]->semivariance[ WEST ] << "\n";
+	cout << "X-COMPONENT: " << average_SVs[1]->semivariance[ X_COMPONENT ] << ", Y-COMPONENT: " <<  average_SVs[1]->semivariance[ Y_COMPONENT ] << "\n";
 }

@@ -10,13 +10,13 @@ This class represents a semivariogram for each of the 4 main compass directions.
 */
 
 // increments with clockwise movement starting from north
-enum direction { NORTH = 0, EAST, SOUTH, WEST };
+enum direction { X_COMPONENT, Y_COMPONENT };
 
 class Semivariance
 {
 public:
 	float displacement;
-	float semivariance[4];
+	float semivariance[2];
 
 	Semivariance( float, float[] );
 	Semivariance( int, float[] );

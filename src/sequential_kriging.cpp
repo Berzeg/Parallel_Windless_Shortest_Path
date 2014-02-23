@@ -34,9 +34,9 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 			// using pythagoras
 			float displacement = sqrt( pow( x1 - x2, 2 ) + pow( y1 - y2, 2 ) );
 		
-			float gamma[4];
+			float gamma[2];
 
-			for( int k = 0; k < 4; k++ )
+			for( int k = 0; k < 2; k++ )
 			{
 				// variables for the semivariance equation
 				float v1 = input_data[ i ]->velocity[ k ];
@@ -109,10 +109,8 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 		} else {
 
 			// If the SV is already there, then add to the current SV components
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ NORTH ] += sv->semivariance[ NORTH ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ EAST ] += sv->semivariance[ EAST ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ SOUTH ] += sv->semivariance[ SOUTH ];
-			bucketed_semivariances[ sv_insert_index ]->semivariance[ WEST ] += sv->semivariance[ WEST ];
+			bucketed_semivariances[ sv_insert_index ]->semivariance[ X_COMPONENT ] += sv->semivariance[ X_COMPONENT ];
+			bucketed_semivariances[ sv_insert_index ]->semivariance[ Y_COMPONENT ] += sv->semivariance[ Y_COMPONENT ];
 
 		}
 
@@ -134,10 +132,8 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 			Semivariance* bucket = bucketed_semivariances[ index ];
 
 			// All average calculations have division, this is our division
-			bucket->semivariance[ NORTH ] /= count;
-			bucket->semivariance[ EAST ] /= count;
-			bucket->semivariance[ SOUTH ] /= count;
-			bucket->semivariance[ WEST ] /= count;
+			bucket->semivariance[ X_COMPONENT ] /= count;
+			bucket->semivariance[ Y_COMPONENT ] /= count;
 		}
 	}
 

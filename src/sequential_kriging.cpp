@@ -65,7 +65,7 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 // The max distance reflects the largest gap between any two 
 // measurements in our data. 
 // The step-size reflects the granularity of our buckets.
-vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < Semivariance* > input_semivariances )
+vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < Semivariance* > &input_semivariances )
 {
 	// The index_array keeps track of the index for the semivariances of each lag class
 	// The count_array keeps count of the number of semivariances in each class
@@ -74,7 +74,11 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 	int num_buckets = max_distance / step_size + 1;
 	int index_array[ num_buckets ];
 	int count_array[ num_buckets ];
-	vector< Semivariance* > bucketed_semivariances;
+	vector < Semivariance* > bucketed_semivariances;
+
+	// fill the index_array and count_array with a default value of 0
+	std::fill_n( index_array, num_buckets, 0 );
+	std::fill_n( count_array, num_buckets, 0 );
 
 	// traverse the input SVs and accumulate their data into new SV objects and push them
 	// into the SV bucket vector
@@ -90,9 +94,18 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 		// if there is no object yet, then create one
 		if ( count_array[ lag_class ] == 0 )
 		{
-			Semivariance* new_sv = new Semivariance( lag_class, sv->semivariance );
+			int new_sv_displacement = ( lag_class + 1 ) * step_size;
+			Semivariance* new_sv = new Semivariance( new_sv_displacement, sv->semivariance );
 
-			bucketed_semivariances.insert( sv_insert_index, new_sv );
+			bucketed_semivariances.insert( bucketed_semivariances.begin() + sv_insert_index, new_sv );
+
+			// update the index of all buckets after the current SV's lag class because we've
+			// added a new bucket
+			for ( int j = lag_class + 1; j < num_buckets; j++ )
+			{
+				index_array[ j ]++;
+			}
+
 		} else {
 
 			// If the SV is already there, then add to the current SV components
@@ -100,18 +113,13 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 			bucketed_semivariances[ sv_insert_index ]->semivariance[ EAST ] += sv->semivariance[ EAST ];
 			bucketed_semivariances[ sv_insert_index ]->semivariance[ SOUTH ] += sv->semivariance[ SOUTH ];
 			bucketed_semivariances[ sv_insert_index ]->semivariance[ WEST ] += sv->semivariance[ WEST ];
-		
+
 		}
 
 		// increment the count for bucket we're inserting the SV into
 		count_array[ lag_class ]++;
-
-		// update the index of all buckets after the current SV's lag class
-		for ( int j = lag_class + 1; j < num_buckets; j++ )
-		{
-			index_array[ j ]++;
-		}
 	}
+
 
 	// Now that we have summed all semivariances for each lag class we will divide the
 	// SV values by the number of contributing SVs
@@ -132,6 +140,8 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 			bucket->semivariance[ WEST ] /= count;
 		}
 	}
+
+	return bucketed_semivariances;
 }
 
 int main()

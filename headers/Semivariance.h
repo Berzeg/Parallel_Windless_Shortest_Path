@@ -1,5 +1,6 @@
 #ifndef SEMIVARIANCE
 #define SEMIVARIANCE
+#include <iostream>
 
 /*
 Hashem Shawqi (hashemshawqi@cmail.carleton.ca)
@@ -18,6 +19,7 @@ public:
 	float semivariance[4];
 
 	Semivariance( float, float[] );
+	Semivariance( int, float[] );
 	~Semivariance();
 };
 

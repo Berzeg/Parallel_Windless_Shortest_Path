@@ -212,6 +212,59 @@ void calculate_left_and_right_variances( vector< Semivariance* > semivariances, 
 	*yr_variance /= ( semivariances.size() - pivot - 1 );
 }
 
+// This calculates the variance-to-mean ratio (VMR) for all semivariances
+// to the left and to the right of the pivot value, and for all possible
+// pivot values. The function calculate the difference between VMRleft and
+// VMRright, and returns the pivot index i at which the maximum difference
+// is observed ( this is our SV model's range, the semi-variance with that
+// index is the model's sill )
+// Source: Chen, Qi, and Peng Gong. "Automatic variogram parameter extraction for textural classification of the panchromatic IKONOS imagery." Geoscience and Remote Sensing, IEEE Transactions on 42.5 (2004): 1106-1115.
+void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range, float* x_sill, float* y_range, float* y_sill )
+{
+	int x_max_index = 0;
+	int y_max_index = 0;
+	float x_max_value = 0;
+	float y_max_value = 0;
+
+	float XLMV, YLMV, XRMV, YRMV, xl_variance, yl_variance, xr_variance, yr_variance;
+
+	for( int pivot = 0; pivot < semivariances.size() - 2; pivot++ )
+	{
+		calculate_left_and_right_means( semivariances, pivot, &XLMV, &XRMV, &YLMV, &YRMV );
+		calculate_left_and_right_variances( semivariances, pivot, XLMV, XRMV, YLMV, YRMV, &xl_variance, &yl_variance, &xr_variance, &yr_variance);
+
+		// calculate the ratio of the variance to the mean for the left and right, and for the x and y components
+		float XVMRleft = xl_variance / XLMV;
+		float XVMRright = xr_variance / XRMV;
+
+		float YVMRLeft = yl_variance / YLMV;
+		float YVMRright = yr_variance / YRMV;
+
+		// calculate the difference between the VMR to the left and right of the pivot for x and y
+		float XDV = XVMRleft - XVMRright;
+		float YDV = YVMRLeft - YVMRright;
+
+		// if we have a new max then update the recorded extrema
+		if ( XDV > x_max_value )
+		{
+			x_max_value = XDV;
+			x_max_index = pivot;
+		}
+
+		if ( YDV > y_max_value )
+		{
+			y_max_value = YDV;
+			y_max_index = pivot;
+		}
+	}
+
+	*x_range = semivariances[ x_max_index ]->displacement;
+	*y_range = semivariances[ y_max_index ]->displacement;
+
+	*x_sill = semivariances[ x_max_index ]->semivariance[ X_COMPONENT ];
+	*y_sill = semivariances[ y_max_index ]->semivariance[ Y_COMPONENT ];
+}
+
 int main(int argc, char * argv[])
 {
 	/*float velocity[] = { 9.0, 1.2 };
@@ -302,4 +355,11 @@ int main(int argc, char * argv[])
 
 	cout << "After calculating the left and right variances we've found:\n";
 	cout << "xl_variance = " << xl_variance << ", yl_variance = " << yl_variance << ", xr_variance = " << xr_variance << ", yr_variance = " << yr_variance << "\n";
+
+	float x_range, y_range, x_sill, y_sill;
+
+	find_range_and_sill( sv_collection, &x_range, &x_sill, &y_range, &y_sill );
+
+	cout << "After calling the find_range_and_sill function on the sv_collection we got:\n";
+	cout << "x_range = " << x_range << ", y_range = " << y_range << ", x_sill = " << x_sill << ", y_sill = " << y_sill << "\n"; 
 }

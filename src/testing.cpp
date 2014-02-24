@@ -134,6 +134,45 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 	return bucketed_semivariances;
 }
 
+// This is a function that takes a vector of semivariances, a pivot index,
+// a pointer to left mean value for the x-component (XLMV) and another to 
+// the right mean value for the x-component (XRMV), a YLMV, and a YRMV. It
+// calculates the mean of all x-semivariances up to and including the pivot
+// and stores it in the (X/Y)LMV, it does the same to the right side of the
+// pivot and stores the result in (X/Y)RMV.
+void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, int* XLMV, int* XRMV, int* YLMV, int* YRMV )
+{
+	// if this is true we'll end up dividing the right values by 0
+	if ( semivariances.size() - pivot - 1 == 0 )
+	{
+		return;
+	}
+
+	// set the mean variables to 0
+	*XLMV = 0;
+	*YLMV = 0;
+	*XRMV = 0;
+	*YRMV = 0;
+
+	for ( int i = 0; i <= pivot; i++ )
+	{
+		*XLMV += semivariances[ i ]->semivariance[ X_COMPONENT ];
+		*YLMV += semivariances[ i ]->semivariance[ Y_COMPONENT ];
+	}
+
+	*XLMV /= ( pivot + 1 );
+	*YLMV /= ( pivot + 1 );
+
+	for ( int i = pivot + 1; i < semivariances.size(); i++ )
+	{
+		*XRMV += semivariances[ i ]->semivariance[ X_COMPONENT ];
+		*YRMV += semivariances[ i ]->semivariance[ Y_COMPONENT ];
+	}
+
+	*XRMV /= ( semivariances.size() - pivot - 1 );
+	*YRMV /= ( semivariances.size() - pivot - 1 );
+}
+
 int main(int argc, char * argv[])
 {
 	/*float velocity[] = { 9.0, 1.2 };
@@ -177,7 +216,7 @@ int main(int argc, char * argv[])
 	cout << "The number of semivariances calculated: " << semivariance_vector.size();
 	cout << "\nThe lag of the first semivariance: " << semivariance_vector[0]->displacement;
 	cout << "\nThe value of the northern semivariance: " << semivariance_vector[0]->semivariance[NORTH] << "\n";
-	*/
+*/	
 
 	// Testing the bucketing function with 6 semivariances to which I've precalculated the 
 	// correct output as: 
@@ -203,8 +242,18 @@ int main(int argc, char * argv[])
 
 	vector <Semivariance*> average_SVs = bucket_sort( 10, 5, sv_collection );
 
-	cout << "The components of the first SV are:\n";
-	cout << "X_COMPONENT: " << average_SVs[0]->semivariance[ X_COMPONENT ] << ", Y_COMPONENT: " <<  average_SVs[0]->semivariance[ Y_COMPONENT ] <<  "\n";
-	cout << "The components of the second SV are:\n";
-	cout << "X-COMPONENT: " << average_SVs[1]->semivariance[ X_COMPONENT ] << ", Y-COMPONENT: " <<  average_SVs[1]->semivariance[ Y_COMPONENT ] << "\n";
+	//cout << "The components of the first SV are:\n";
+	//cout << "X_COMPONENT: " << average_SVs[0]->semivariance[ X_COMPONENT ] << ", Y_COMPONENT: " <<  average_SVs[0]->semivariance[ Y_COMPONENT ] <<  "\n";
+	//cout << "The components of the second SV are:\n";
+	//cout << "X-COMPONENT: " << average_SVs[1]->semivariance[ X_COMPONENT ] << ", Y-COMPONENT: " <<  average_SVs[1]->semivariance[ Y_COMPONENT ] << "\n";
+
+
+	// Testing the graph fitting functions
+	// The output should be the same as the above result
+	int XLMV, YLMV, XRMV, YRMV;
+
+	calculate_left_and_right_means( sv_collection, 2, &XLMV, &XRMV, &YLMV, &YRMV );
+
+	cout << "After calculating the left and right means we've found:\n";
+	cout << "XMLV = " << XLMV << ", YLMV = " << YLMV << ", XRMV = " << XRMV << ", YRMV = " << YRMV << "\n";
 }

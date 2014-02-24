@@ -140,6 +140,40 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 	return bucketed_semivariances;
 }
 
+
+// This is a function that takes a vector of semivariances, a pivot index,
+// a pointer to left mean value for the x-component (XLMV) and another to 
+// the right mean value for the x-component (XRMV), a YLMV, and a YRMV. It
+// calculates the mean of all x-semivariances up to and including the pivot
+// and stores it in the (X/Y)LMV, it does the same to the right side of the
+// pivot and stores the result in (X/Y)RMV.
+void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, int* XLMV, int* XRMV, int* YLMV, int* YRMV )
+{
+	// if this is true we'll end up dividing the right values by 0
+	if ( semivariances.size() - pivot - 1 == 0 )
+	{
+		return;
+	}
+
+	for ( int i = 0; i <= pivot; i++ )
+	{
+		*XLMV += semivariances->semivariance[ X_COMPONENT ];
+		*YLMV += semivariances->semivariance[ Y_COMPONENT ];
+	}
+
+	*XLMV /= ( pivot + 1 );
+	*YLMV /= ( pivot + 1 );
+
+	for ( int i = pivot + 1; i < semivariances.size(); i++ )
+	{
+		*XRMV += semivariances->semivariance[ X_COMPONENT ];
+		*YRMV += semivariances->semivariance[ Y_COMPONENT ];
+	}
+
+	*XRMV /= ( semivariances.size() - pivot - 1 );
+	*YRMV /= ( semivariances.size() - pivot - 1 );
+}
+
 int main()
 {
 

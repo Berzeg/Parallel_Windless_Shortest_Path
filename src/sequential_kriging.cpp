@@ -147,7 +147,7 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 // calculates the mean of all x-semivariances up to and including the pivot
 // and stores it in the (X/Y)LMV, it does the same to the right side of the
 // pivot and stores the result in (X/Y)RMV.
-void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, int* XLMV, int* XRMV, int* YLMV, int* YRMV )
+void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, float* XLMV, float* XRMV, float* YLMV, float* YRMV )
 {
 	// if this is true we'll end up dividing the right values by 0
 	if ( semivariances.size() - pivot - 1 == 0 )
@@ -155,10 +155,16 @@ void calculate_left_and_right_means( vector< Semivariance* > semivariances, int 
 		return;
 	}
 
+	// set the mean variables to 0
+	*XLMV = 0;
+	*YLMV = 0;
+	*XRMV = 0;
+	*YRMV = 0;
+
 	for ( int i = 0; i <= pivot; i++ )
 	{
-		*XLMV += semivariances->semivariance[ X_COMPONENT ];
-		*YLMV += semivariances->semivariance[ Y_COMPONENT ];
+		*XLMV += semivariances[ i ]->semivariance[ X_COMPONENT ];
+		*YLMV += semivariances[ i ]->semivariance[ Y_COMPONENT ];
 	}
 
 	*XLMV /= ( pivot + 1 );
@@ -166,12 +172,51 @@ void calculate_left_and_right_means( vector< Semivariance* > semivariances, int 
 
 	for ( int i = pivot + 1; i < semivariances.size(); i++ )
 	{
-		*XRMV += semivariances->semivariance[ X_COMPONENT ];
-		*YRMV += semivariances->semivariance[ Y_COMPONENT ];
+		*XRMV += semivariances[ i ]->semivariance[ X_COMPONENT ];
+		*YRMV += semivariances[ i ]->semivariance[ Y_COMPONENT ];
 	}
 
 	*XRMV /= ( semivariances.size() - pivot - 1 );
 	*YRMV /= ( semivariances.size() - pivot - 1 );
+}
+
+// This function takes a vector of semivariances, a pivot index,
+// the XLMV, YLMV, XRMV, YRMV from the calculate_left_and_right_means
+// method. It also takes pointers to the x component left variance
+// (xl_variance), yl_variance, xr_variance, and yr_variance; it
+// calculates each variance and assigns the value to the parameters.
+void calculate_left_and_right_variances( vector< Semivariance* > semivariances, int pivot, float XLMV, float XRMV, float YLMV, float YRMV, float* xl_variance, float* yl_variance, float* xr_variance, float* yr_variance)
+{
+	// if this is true we'll end up dividing the right values by 0
+	if ( semivariances.size() - pivot - 1 == 0 )
+	{
+		return;
+	}
+
+	// set the variance variables to 0
+	*xl_variance = 0;
+	*yl_variance = 0;
+	*xr_variance = 0;
+	*yr_variance = 0;
+
+
+	for ( int i = 0; i <= pivot; i++ )
+	{
+		*xl_variance += pow( XLMV - semivariances[ i ]->semivariance[ X_COMPONENT ], 2 );
+		*yl_variance += pow( YLMV - semivariances[ i ]->semivariance[ Y_COMPONENT ], 2 );
+	}
+
+	*xl_variance /= ( pivot + 1 );
+	*yl_variance /= ( pivot + 1 );
+
+	for ( int i = pivot + 1; i < semivariances.size(); i++ )
+	{
+		*xr_variance += pow( XRMV - semivariances[ i ]->semivariance[ X_COMPONENT ], 2 );
+		*yr_variance += pow( YRMV - semivariances[ i ]->semivariance[ Y_COMPONENT ], 2 );
+	}
+
+	*xr_variance /= ( semivariances.size() - pivot - 1 );
+	*yr_variance /= ( semivariances.size() - pivot - 1 );
 }
 
 int main()

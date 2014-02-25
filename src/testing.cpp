@@ -265,6 +265,21 @@ void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range
 	*y_sill = semivariances[ y_max_index ]->semivariance[ Y_COMPONENT ];
 }
 
+// This function takes the parameters of the spherical semivariance model.
+// We assume a "nugget" of 0 (f(0) = 0). The function is also provided with
+// the lag for which we will be estimating the semi-variance.
+// The returned value is equal to the estimated semi-variance for that lag.
+float interpolate_spherical_sv( float displacement, float sill, float range )
+{
+	if( displacement >= 0 && range != 0 )
+	{
+		float l = 3 * displacement / ( 2 * range );
+		float r = pow( displacement / range, 3 ) / 2;
+
+		return sill * ( l - r );
+	}
+}
+
 int main(int argc, char * argv[])
 {
 	/*float velocity[] = { 9.0, 1.2 };

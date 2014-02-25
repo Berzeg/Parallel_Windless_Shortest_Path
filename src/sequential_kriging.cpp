@@ -248,8 +248,8 @@ void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range
 		float YVMRright = yr_variance / YRMV;
 
 		// calculate the difference between the VMR to the left and right of the pivot for x and y
-		XDV = XVMRleft - XVMRright;
-		YDV = YVMRLeft - YVMRright;
+		float XDV = XVMRleft - XVMRright;
+		float YDV = YVMRLeft - YVMRright;
 
 		// if we have a new max then update the recorded extrema
 		if ( XDV > x_max_value )
@@ -270,6 +270,21 @@ void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range
 
 	*x_sill = semivariances[ x_max_index ]->semivariance[ X_COMPONENT ];
 	*y_sill = semivariances[ y_max_index ]->semivariance[ Y_COMPONENT ];
+}
+
+// This function takes the parameters of the spherical semivariance model.
+// We assume a "nugget" of 0 (f(0) = 0). The function is also provided with
+// the lag for which we will be estimating the semi-variance.
+// The returned value is equal to the estimated semi-variance for that lag.
+float interpolate_spherical_sv( float displacement, float sill, float range )
+{
+	if( displacement >= 0 && range != 0 )
+	{
+		float l = 3 * displacement / ( 2 * range );
+		float r = pow( displacement / range, 3 ) / 2;
+
+		return sill * ( l - r );
+	}
 }
 
 

@@ -15,11 +15,11 @@ enum direction { X_COMPONENT, Y_COMPONENT };
 class Semivariance
 {
 public:
-	float displacement;
-	float semivariance[2];
+	double displacement;
+	double semivariance[2];
 
-	Semivariance( float, float[] );
-	Semivariance( int, float[] );
+	Semivariance( double, double[] );
+	Semivariance( int, double[] );
 	~Semivariance();
 };
 

@@ -19,22 +19,22 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 		for(int j = i + 1; j < input_data.size(); j++)
 		{
 			// variables for pythagoras
-			float x1 = input_data[ i ]->x;
-			float x2 = input_data[ j ]->x;
-			float y1 = input_data[ i ]->y;
-			float y2 = input_data[ j ]->y;
+			double x1 = input_data[ i ]->x;
+			double x2 = input_data[ j ]->x;
+			double y1 = input_data[ i ]->y;
+			double y2 = input_data[ j ]->y;
 
 			// find the displacement of the two samples using their position coordinates
 			// using pythagoras
-			float displacement = sqrt( pow( x1 - x2, 2 ) + pow( y1 - y2, 2 ) );
+			double displacement = sqrt( pow( x1 - x2, 2 ) + pow( y1 - y2, 2 ) );
 		
-			float gamma[2];
+			double gamma[2];
 
 			for( int k = 0; k < 2; k++ )
 			{
 				// variables for the semivariance equation
-				float v1 = input_data[ i ]->velocity[ k ];
-				float v2 = input_data[ j ]->velocity[ k ];
+				double v1 = input_data[ i ]->velocity[ k ];
+				double v2 = input_data[ j ]->velocity[ k ];
 
 				// semivariance equation for points i and j
 				gamma[ k ] = 0.5 * pow( v1 - v2, 2 );
@@ -117,7 +117,7 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 	// SV values by the number of contributing SVs
 	for ( int i = 0; i < num_buckets; i++ )
 	{
-		float count = float( count_array[ i ] );
+		double count = double( count_array[ i ] );
 
 		// if there were any SVs contributing to this bucket at all
 		if ( count > 0 )
@@ -140,7 +140,7 @@ vector < Semivariance* > bucket_sort( int max_distance, int step_size, vector < 
 // calculates the mean of all x-semivariances up to and including the pivot
 // and stores it in the (X/Y)LMV, it does the same to the right side of the
 // pivot and stores the result in (X/Y)RMV.
-void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, float* XLMV, float* XRMV, float* YLMV, float* YRMV )
+void calculate_left_and_right_means( vector< Semivariance* > semivariances, int pivot, double* XLMV, double* XRMV, double* YLMV, double* YRMV )
 {
 	// if this is true we'll end up dividing the right values by 0
 	if ( semivariances.size() - pivot - 1 == 0 )
@@ -178,7 +178,7 @@ void calculate_left_and_right_means( vector< Semivariance* > semivariances, int 
 // method. It also takes pointers to the x component left variance
 // (xl_variance), yl_variance, xr_variance, and yr_variance; it
 // calculates each variance and assigns the value to the parameters.
-void calculate_left_and_right_variances( vector< Semivariance* > semivariances, int pivot, float XLMV, float XRMV, float YLMV, float YRMV, float* xl_variance, float* yl_variance, float* xr_variance, float* yr_variance)
+void calculate_left_and_right_variances( vector< Semivariance* > semivariances, int pivot, double XLMV, double XRMV, double YLMV, double YRMV, double* xl_variance, double* yl_variance, double* xr_variance, double* yr_variance)
 {
 	// if this is true we'll end up dividing the right values by 0
 	if ( semivariances.size() - pivot - 1 == 0 )
@@ -219,14 +219,14 @@ void calculate_left_and_right_variances( vector< Semivariance* > semivariances, 
 // is observed ( this is our SV model's range, the semi-variance with that
 // index is the model's sill )
 // Source: Chen, Qi, and Peng Gong. "Automatic variogram parameter extraction for textural classification of the panchromatic IKONOS imagery." Geoscience and Remote Sensing, IEEE Transactions on 42.5 (2004): 1106-1115.
-void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range, float* x_sill, float* y_range, float* y_sill )
+void find_range_and_sill( vector < Semivariance* > semivariances, double* x_range, double* x_sill, double* y_range, double* y_sill )
 {
 	int x_max_index = 0;
 	int y_max_index = 0;
-	float x_max_value = 0;
-	float y_max_value = 0;
+	double x_max_value = 0;
+	double y_max_value = 0;
 
-	float XLMV, YLMV, XRMV, YRMV, xl_variance, yl_variance, xr_variance, yr_variance;
+	double XLMV, YLMV, XRMV, YRMV, xl_variance, yl_variance, xr_variance, yr_variance;
 
 	for( int pivot = 0; pivot < semivariances.size() - 2; pivot++ )
 	{
@@ -234,15 +234,15 @@ void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range
 		calculate_left_and_right_variances( semivariances, pivot, XLMV, XRMV, YLMV, YRMV, &xl_variance, &yl_variance, &xr_variance, &yr_variance);
 
 		// calculate the ratio of the variance to the mean for the left and right, and for the x and y components
-		float XVMRleft = xl_variance / XLMV;
-		float XVMRright = xr_variance / XRMV;
+		double XVMRleft = xl_variance / XLMV;
+		double XVMRright = xr_variance / XRMV;
 
-		float YVMRLeft = yl_variance / YLMV;
-		float YVMRright = yr_variance / YRMV;
+		double YVMRLeft = yl_variance / YLMV;
+		double YVMRright = yr_variance / YRMV;
 
 		// calculate the difference between the VMR to the left and right of the pivot for x and y
-		float XDV = XVMRleft - XVMRright;
-		float YDV = YVMRLeft - YVMRright;
+		double XDV = XVMRleft - XVMRright;
+		double YDV = YVMRLeft - YVMRright;
 
 		// if we have a new max then update the recorded extrema
 		if ( XDV > x_max_value )
@@ -269,12 +269,12 @@ void find_range_and_sill( vector < Semivariance* > semivariances, float* x_range
 // We assume a "nugget" of 0 (f(0) = 0). The function is also provided with
 // the lag for which we will be estimating the semi-variance.
 // The returned value is equal to the estimated semi-variance for that lag.
-float interpolate_spherical_sv( float displacement, float sill, float range )
+double interpolate_spherical_sv( double displacement, double sill, double range )
 {
 	if( displacement >= 0 && range != 0 )
 	{
-		float l = 3 * displacement / ( 2 * range );
-		float r = pow( displacement / range, 3 ) / 2;
+		double l = 3 * displacement / ( 2 * range );
+		double r = pow( displacement / range, 3 ) / 2;
 
 		return sill * ( l - r );
 	}
@@ -282,7 +282,7 @@ float interpolate_spherical_sv( float displacement, float sill, float range )
 
 int main(int argc, char * argv[])
 {
-	/*float velocity[] = { 9.0, 1.2 };
+	/*double velocity[] = { 9.0, 1.2 };
 	WindVector* wv = new WindVector( 1, 1, velocity );
 
 	cout << "testing WindVector class:\n";
@@ -293,7 +293,7 @@ int main(int argc, char * argv[])
 	}	
 
 
-	float gamma[] = { 1.2, 3.4 };
+	double gamma[] = { 1.2, 3.4 };
 	Semivariance* sv = new Semivariance( 3.1, gamma );
 
 	cout << "Testing semivariance class: \n";
@@ -306,9 +306,9 @@ int main(int argc, char * argv[])
 
 	// testing the semivariance method
 	// create another wind vector in order to establish a semivariance with wv
-	float velocity2[] = { 4.2, 3.3 };
+	double velocity2[] = { 4.2, 3.3 };
 	WindVector* wv2 = new WindVector( 5, 7, velocity2 );
-	float velocity3[] = { 4.4, 9.1 };
+	double velocity3[] = { 4.4, 9.1 };
 	WindVector* wv3 = new WindVector( 3, 12, velocity3 );
 	WindVector* wv4 = new WindVector( 12, 5, velocity3 );
 
@@ -330,12 +330,12 @@ int main(int argc, char * argv[])
 	// x1 = 56.7, y1 = 42
 	// x2 = 50.3, y2 = 58.3
 
-	float component_sv1[] = { 12, 34 };
-	float component_sv2[] = { 90, 13 };
-	float component_sv3[] = { 68, 79 };
-	float component_sv4[] = { 43, 65 };
-	float component_sv5[] = { 17, 28 };
-	float component_sv6[] = { 91, 82 };
+	double component_sv1[] = { 12, 34 };
+	double component_sv2[] = { 90, 13 };
+	double component_sv3[] = { 68, 79 };
+	double component_sv4[] = { 43, 65 };
+	double component_sv5[] = { 17, 28 };
+	double component_sv6[] = { 91, 82 };
 
 	Semivariance* sv1 = new Semivariance( 2, component_sv1 );
 	Semivariance* sv2 = new Semivariance( 3, component_sv2 );
@@ -357,21 +357,21 @@ int main(int argc, char * argv[])
 
 	// Testing the graph fitting functions
 	// The output should be the same as the above result
-	float XLMV, YLMV, XRMV, YRMV;
+	double XLMV, YLMV, XRMV, YRMV;
 
 	calculate_left_and_right_means( sv_collection, 2, &XLMV, &XRMV, &YLMV, &YRMV );
 
 	cout << "After calculating the left and right means we've found:\n";
 	cout << "XMLV = " << XLMV << ", YLMV = " << YLMV << ", XRMV = " << XRMV << ", YRMV = " << YRMV << "\n";
 
-	float xl_variance, yl_variance, xr_variance, yr_variance;
+	double xl_variance, yl_variance, xr_variance, yr_variance;
 
 	calculate_left_and_right_variances( sv_collection, 2, XLMV, XRMV, YLMV, YRMV, &xl_variance, &yl_variance, &xr_variance, &yr_variance );
 
 	cout << "After calculating the left and right variances we've found:\n";
 	cout << "xl_variance = " << xl_variance << ", yl_variance = " << yl_variance << ", xr_variance = " << xr_variance << ", yr_variance = " << yr_variance << "\n";
 
-	float x_range, y_range, x_sill, y_sill;
+	double x_range, y_range, x_sill, y_sill;
 
 	find_range_and_sill( sv_collection, &x_range, &x_sill, &y_range, &y_sill );
 

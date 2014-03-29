@@ -1,7 +1,7 @@
 #include "../headers/Semivariance.h"
 
 
-Semivariance::Semivariance( float h, float gamma[] )
+Semivariance::Semivariance( double h, double gamma[] )
 {
 	displacement = h;
 	
@@ -11,9 +11,9 @@ Semivariance::Semivariance( float h, float gamma[] )
 	}
 }
 
-Semivariance::Semivariance( int h, float gamma[] )
+Semivariance::Semivariance( double h, double gamma[] )
 {
-	displacement = float( h );
+	displacement = double( h );
 	
 	for (int i = 0; i < 2; i++ )
 	{

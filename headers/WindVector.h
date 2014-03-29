@@ -13,9 +13,9 @@ class WindVector
 public:
 	int x;
 	int y;
-	float velocity[2];
+	double velocity[2];
 
-	WindVector( int, int, float[] );
+	WindVector( int, int, double[] );
 	~WindVector();
 };
 

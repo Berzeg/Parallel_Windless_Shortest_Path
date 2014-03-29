@@ -1,6 +1,6 @@
 #include "../headers/WindVector.h"
 
-WindVector::WindVector( int x, int y, float v[] )
+WindVector::WindVector( int x, int y, double v[] )
 {
 	this->x = x;
 	this->y = y;

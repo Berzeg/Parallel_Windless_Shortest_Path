@@ -281,23 +281,36 @@ double interpolate_spherical_sv( double displacement, double sill, double range 
 }
 
 // Matrix Multiplication
-void matrix_multiply( double** A, double** B, double** C )
+void matrix_multiply( double** A, double** B, double** C, int n )
 {
 	int rowA, colA, rowB, colB;
-
-	n = (sizeof(matrix) / sizeof(*double));
-
-	C[ i ][ j ] = 
 
 	for ( rowA = 0; rowA < n; rowA++ )
 	{
 		for ( colB = 0; colB < n; colB++ )
 		{
+			C[rowA][colB] = 0;
+			
 			for ( colA = 0; colA < n; colA++ )
 			{
-				C[ rowA ][ colB ] = A[ rowA ][ colA ] * B[ colA ][ colB ];
+				C[ rowA ][ colB ] += A[ rowA ][ colA ] * B[ colA ][ colB ];
 			}
 		}
+	}
+}
+
+// Print matrix as string
+void matrixPrint( double** M, int n )
+{
+	int i, j;
+
+	for ( i = 0; i < n; i++ )
+	{
+		for ( j = 0; j < n; j++ )
+		{
+			cout << M[i][j] << ", ";
+		}
+		cout << "\n";
 	}
 }
 
@@ -336,7 +349,7 @@ double determinant(double **a,int n)
                j2++;
             }
          }
-         det += pow(-1.0,j1+2.0) * a[0][j1] * Determinant(m,n-1);
+         det += pow(-1.0,j1+2.0) * a[0][j1] * determinant(m,n-1);
          for (i=0;i<n;i++)
             delete [] m[i];
          delete [] m;
@@ -377,7 +390,7 @@ void coFactor(double **a,int n,double **b)
          }
 
          /* Calculate the determinate */
-         det = Determinant(c,n-1);
+         det = determinant(c,n-1);
 
          /* Fill in the elements of the cofactor */
          b[i][j] = pow(-1.0,i+j+2.0) * det;
@@ -411,7 +424,7 @@ void matrixInverse(double **matrix, double **inverse)
 	int i, j, n;
 	double det;	
 
-	n = (sizeof(matrix) / sizeof(*double));
+	n = sqrt(sizeof(matrix) / sizeof(double*));
 	
 	det = determinant( matrix, n );
 
@@ -470,7 +483,7 @@ int main(int argc, char * argv[])
 	cout << "The number of semivariances calculated: " << semivariance_vector.size();
 	cout << "\nThe lag of the first semivariance: " << semivariance_vector[0]->displacement;
 	cout << "\nThe value of the northern semivariance: " << semivariance_vector[0]->semivariance[NORTH] << "\n";
-*/	
+	
 
 	// Testing the bucketing function with 6 semivariances to which I've precalculated the 
 	// correct output as: 
@@ -524,4 +537,33 @@ int main(int argc, char * argv[])
 
 	cout << "After calling the find_range_and_sill function on the sv_collection we got:\n";
 	cout << "x_range = " << x_range << ", y_range = " << y_range << ", x_sill = " << x_sill << ", y_sill = " << y_sill << "\n"; 
+*/
+
+	int i, j, n;
+	double **A, **B, **C;
+
+	n = 3;
+
+	A = new double*[ n ];
+	B = new double*[ n ];
+	C = new double*[ n ];
+
+	for ( i = 0; i < n; i++ )
+	{
+		A[ i ] = new double[ n ];
+		B[ i ] = new double[ n ];
+		C[ i ] = new double[ n ];
+
+		for ( j = 0; j < n; j++ )
+		{
+			A[ i ][ j ] = i * n + j;
+			B[ i ][ j ] = i * n + j;
+		}
+	}
+
+	matrix_multiply( A, B, C, n );	
+
+	cout << "Testing matrix multiplication method\n";
+	matrixPrint( A, n );
+	matrixPrint( C, n );
 }

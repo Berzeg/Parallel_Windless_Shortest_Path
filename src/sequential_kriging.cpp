@@ -290,23 +290,36 @@ double interpolate_exponential( double displacement, double nugget, double sill,
 }
 
 // Matrix Multiplication
-void matrix_multiply( double** A, double** B, double** C )
+void matrix_multiply( double** A, double** B, double** C, int n )
 {
 	int rowA, colA, rowB, colB;
-
-	n = (sizeof(matrix) / sizeof(*double));
-
-	C[ i ][ j ] = 
 
 	for ( rowA = 0; rowA < n; rowA++ )
 	{
 		for ( colB = 0; colB < n; colB++ )
 		{
+			C[rowA][colB] = 0;
+			
 			for ( colA = 0; colA < n; colA++ )
 			{
-				C[ rowA ][ colB ] = A[ rowA ][ colA ] * B[ colA ][ colB ];
+				C[ rowA ][ colB ] += A[ rowA ][ colA ] * B[ colA ][ colB ];
 			}
 		}
+	}
+}
+
+// Print matrix as string
+void matrixPrint( double** M, int n )
+{
+	int i, j;
+
+	for ( i = 0; i < n; i++ )
+	{
+		for ( j = 0; j < n; j++ )
+		{
+			cout << M[i][j] << ", ";
+		}
+		cout << "\n";
 	}
 }
 
@@ -345,7 +358,7 @@ double determinant(double **a,int n)
                j2++;
             }
          }
-         det += pow(-1.0,j1+2.0) * a[0][j1] * Determinant(m,n-1);
+         det += pow(-1.0,j1+2.0) * a[0][j1] * determinant(m,n-1);
          for (i=0;i<n;i++)
             delete [] m[i];
          delete [] m;
@@ -386,7 +399,7 @@ void coFactor(double **a,int n,double **b)
          }
 
          /* Calculate the determinate */
-         det = Determinant(c,n-1);
+         det = determinant(c,n-1);
 
          /* Fill in the elements of the cofactor */
          b[i][j] = pow(-1.0,i+j+2.0) * det;
@@ -420,7 +433,7 @@ void matrixInverse(double **matrix, double **inverse)
 	int i, j, n;
 	double det;	
 
-	n = (sizeof(matrix) / sizeof(*double));
+	n = sqrt(sizeof(matrix) / sizeof(double*));
 	
 	det = determinant( matrix, n );
 

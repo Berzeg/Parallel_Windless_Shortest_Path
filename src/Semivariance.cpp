@@ -11,7 +11,7 @@ Semivariance::Semivariance( double h, double gamma[] )
 	}
 }
 
-Semivariance::Semivariance( double h, double gamma[] )
+Semivariance::Semivariance( int h, double gamma[] )
 {
 	displacement = double( h );
 	

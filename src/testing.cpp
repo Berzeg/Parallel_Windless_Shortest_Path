@@ -280,6 +280,153 @@ double interpolate_spherical_sv( double displacement, double sill, double range 
 	}
 }
 
+// Matrix Multiplication
+void matrix_multiply( double** A, double** B, double** C )
+{
+	int rowA, colA, rowB, colB;
+
+	n = (sizeof(matrix) / sizeof(*double));
+
+	C[ i ][ j ] = 
+
+	for ( rowA = 0; rowA < n; rowA++ )
+	{
+		for ( colB = 0; colB < n; colB++ )
+		{
+			for ( colA = 0; colA < n; colA++ )
+			{
+				C[ rowA ][ colB ] = A[ rowA ][ colA ] * B[ colA ][ colB ];
+			}
+		}
+	}
+}
+
+
+// Matrix inversion
+// This is the work of Paul Bourke
+// taken from: http://www.cs.rochester.edu/~brown/Crypto/assts/projects/adj.html
+
+/*
+   Recursive definition of determinant using expansion by minors.
+*/
+double determinant(double **a,int n)
+{
+   int i,j,j1,j2;
+   double det = 0;
+   double **m = NULL;
+
+   if (n < 1) { /* Error */
+
+   } else if (n == 1) { /* Shouldn't get used */
+      det = a[0][0];
+   } else if (n == 2) {
+      det = a[0][0] * a[1][1] - a[1][0] * a[0][1];
+   } else {
+      det = 0;
+      for (j1=0;j1<n;j1++) {
+         m = new double*[ n ];
+         for (i=0;i<n-1;i++)
+            m[i] = new double[ n ];
+         for (i=1;i<n;i++) {
+            j2 = 0;
+            for (j=0;j<n;j++) {
+               if (j == j1)
+                  continue;
+               m[i-1][j2] = a[i][j];
+               j2++;
+            }
+         }
+         det += pow(-1.0,j1+2.0) * a[0][j1] * Determinant(m,n-1);
+         for (i=0;i<n;i++)
+            delete [] m[i];
+         delete [] m;
+      }
+   }
+   return(det);
+}
+
+/*
+   Find the cofactor matrix of a square matrix
+*/
+void coFactor(double **a,int n,double **b)
+{
+   int i,j,ii,jj,i1,j1;
+   double det;
+   double **c;
+
+   c = new double*[ n ];
+   for (i=0;i<n;i++)
+	 c[i] = new double[ n ];
+
+   for (j=0;j<n;j++) {
+      for (i=0;i<n;i++) {
+
+         /* Form the adjoint a_ij */
+         i1 = 0;
+         for (ii=0;ii<n;ii++) {
+            if (ii == i)
+               continue;
+            j1 = 0;
+            for (jj=0;jj<n;jj++) {
+               if (jj == j)
+                  continue;
+               c[i1][j1] = a[ii][jj];
+               j1++;
+            }
+            i1++;
+         }
+
+         /* Calculate the determinate */
+         det = Determinant(c,n-1);
+
+         /* Fill in the elements of the cofactor */
+         b[i][j] = pow(-1.0,i+j+2.0) * det;
+      }
+   }
+   for (i=0;i<n;i++)
+      delete [] c[ i ];
+   delete [] c;
+}
+
+/*
+   Transpose of a square matrix, do it in place
+*/
+void transpose(double **a,int n)
+{
+   int i,j;
+   double tmp;
+
+   for (i=1;i<n;i++) {
+      for (j=0;j<i;j++) {
+         tmp = a[i][j];
+         a[i][j] = a[j][i];
+         a[j][i] = tmp;
+      }
+   }
+}
+
+// A matrix invert function that applies the above 3 algorithms in order
+void matrixInverse(double **matrix, double **inverse)
+{
+	int i, j, n;
+	double det;	
+
+	n = (sizeof(matrix) / sizeof(*double));
+	
+	det = determinant( matrix, n );
+
+	coFactor( matrix, n, inverse );
+
+	// we don't need to transpose since the kriging matrix is symmetric
+	for ( i = 0; i < n; i++ )
+	{
+		for ( j = 0; j < n; j++ )
+		{
+			inverse[i][j] = inverse[i][j] / det;
+		}
+	}
+}
+
 int main(int argc, char * argv[])
 {
 	/*double velocity[] = { 9.0, 1.2 };

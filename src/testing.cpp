@@ -290,7 +290,7 @@ void matrix_multiply( double** A, double** B, double** C, int n )
 		for ( colB = 0; colB < n; colB++ )
 		{
 			C[rowA][colB] = 0;
-			
+
 			for ( colA = 0; colA < n; colA++ )
 			{
 				C[ rowA ][ colB ] += A[ rowA ][ colA ] * B[ colA ][ colB ];
@@ -337,9 +337,9 @@ double determinant(double **a,int n)
    } else {
       det = 0;
       for (j1=0;j1<n;j1++) {
-         m = new double*[ n ];
+      	m = new double* [ n - 1 ];
          for (i=0;i<n-1;i++)
-            m[i] = new double[ n ];
+        	m[ i ] = new double [ n - 1 ];
          for (i=1;i<n;i++) {
             j2 = 0;
             for (j=0;j<n;j++) {
@@ -350,8 +350,8 @@ double determinant(double **a,int n)
             }
          }
          det += pow(-1.0,j1+2.0) * a[0][j1] * determinant(m,n-1);
-         for (i=0;i<n;i++)
-            delete [] m[i];
+         for (i=0;i<n-1;i++)
+            delete [] m[ i ];
          delete [] m;
       }
    }
@@ -419,12 +419,10 @@ void transpose(double **a,int n)
 }
 
 // A matrix invert function that applies the above 3 algorithms in order
-void matrixInverse(double **matrix, double **inverse)
+void matrixInverse(double **matrix, double **inverse, int n)
 {
-	int i, j, n;
+	int i, j;
 	double det;	
-
-	n = sqrt(sizeof(matrix) / sizeof(double*));
 	
 	det = determinant( matrix, n );
 
@@ -540,7 +538,7 @@ int main(int argc, char * argv[])
 */
 
 	int i, j, n;
-	double **A, **B, **C;
+	double **A, **B, **C, **Ci;
 
 	n = 3;
 
@@ -553,17 +551,34 @@ int main(int argc, char * argv[])
 		A[ i ] = new double[ n ];
 		B[ i ] = new double[ n ];
 		C[ i ] = new double[ n ];
-
-		for ( j = 0; j < n; j++ )
-		{
-			A[ i ][ j ] = i * n + j;
-			B[ i ][ j ] = i * n + j;
-		}
 	}
 
-	matrix_multiply( A, B, C, n );	
+	A[ 0 ][ 0 ] = 1;
+	A[ 0 ][ 1 ] = 4;
+	A[ 0 ][ 2 ] = 1;
 
-	cout << "Testing matrix multiplication method\n";
+	A[ 1 ][ 0 ] = 4;
+	A[ 1 ][ 1 ] = 2;
+	A[ 1 ][ 2 ] = 0;
+
+	A[ 2 ][ 0 ] = 1;
+	A[ 2 ][ 1 ] = 0;
+	A[ 2 ][ 2 ] = -5;
+
+	matrix_multiply( A, A, C, n );	
+
+	cout << "Testing matrix multiplication method\nMultiplying A with itself. A:\n";
 	matrixPrint( A, n );
+	cout << "result of multiplication:\n";
+	matrixPrint( C, n );
+
+	cout << "Testing matrix inverse method. The inverse matrix is:\n";
+	cout << "Remember I'm not transposing the matrix because we only have symmetric matrices in our application\n";
+
+	matrixInverse( A, B, n );
+	matrixPrint( B, n );
+	matrix_multiply( A, B, C, n );
+
+	cout << "This should be the identity matrix after multiplying the matrix with its inverse:\n";
 	matrixPrint( C, n );
 }

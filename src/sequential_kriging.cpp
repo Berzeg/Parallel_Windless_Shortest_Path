@@ -299,7 +299,7 @@ void matrix_multiply( double** A, double** B, double** C, int n )
 		for ( colB = 0; colB < n; colB++ )
 		{
 			C[rowA][colB] = 0;
-			
+
 			for ( colA = 0; colA < n; colA++ )
 			{
 				C[ rowA ][ colB ] += A[ rowA ][ colA ] * B[ colA ][ colB ];
@@ -346,9 +346,9 @@ double determinant(double **a,int n)
    } else {
       det = 0;
       for (j1=0;j1<n;j1++) {
-         m = new double*[ n ];
+      	m = new double* [ n - 1 ];
          for (i=0;i<n-1;i++)
-            m[i] = new double[ n ];
+        	m[ i ] = new double [ n - 1 ];
          for (i=1;i<n;i++) {
             j2 = 0;
             for (j=0;j<n;j++) {
@@ -359,8 +359,8 @@ double determinant(double **a,int n)
             }
          }
          det += pow(-1.0,j1+2.0) * a[0][j1] * determinant(m,n-1);
-         for (i=0;i<n;i++)
-            delete [] m[i];
+         for (i=0;i<n-1;i++)
+            delete [] m[ i ];
          delete [] m;
       }
    }
@@ -428,12 +428,10 @@ void transpose(double **a,int n)
 }
 
 // A matrix invert function that applies the above 3 algorithms in order
-void matrixInverse(double **matrix, double **inverse)
+void matrixInverse(double **matrix, double **inverse, int n)
 {
-	int i, j, n;
+	int i, j;
 	double det;	
-
-	n = sqrt(sizeof(matrix) / sizeof(double*));
 	
 	det = determinant( matrix, n );
 

@@ -12,6 +12,11 @@ The output of the program is a 2D array with original and interpolated vector va
 #include "../headers/Semivariance.h"
 #include <vector> /* vector */
 #include <cmath> /* sqrt */
+#include <string> /* string */
+#include <fstream> /* ifstream, ofstream */
+#include <sstream> /* istringstream, stringstream */
+
+
 
 using namespace std;
 
@@ -228,7 +233,7 @@ void calculate_left_and_right_variances( vector< Semivariance* > semivariances, 
 // is observed ( this is our SV model's range, the semi-variance with that
 // index is the model's sill )
 // Source: Chen, Qi, and Peng Gong. "Automatic variogram parameter extraction for textural classification of the panchromatic IKONOS imagery." Geoscience and Remote Sensing, IEEE Transactions on 42.5 (2004): 1106-1115.
-void find_range_and_sill( vector < Semivariance* > semivariances, double* x_range, double* x_sill, double* y_range, double* y_sill )
+void find_range_and_sill( vector < Semivariance* > semivariances, double* x_range, double* x_sill, double* x_nugget, double* y_range, double* y_sill, double* y_nugget )
 {
 	int x_max_index = 0;
 	int y_max_index = 0;
@@ -236,6 +241,11 @@ void find_range_and_sill( vector < Semivariance* > semivariances, double* x_rang
 	double y_max_value = 0;
 
 	double XLMV, YLMV, XRMV, YRMV, xl_variance, yl_variance, xr_variance, yr_variance;
+
+	// the nuggets are initially set to the first semivariance. We traverse the list
+	// of SVs to make sure they're they represent the smallest SV in the lsit.
+	*x_nugget = semivariances[ 0 ]->semivariance[ X_COMPONENT ];
+	*y_nugget = semivariances[ 0 ]->semivariance[ Y_COMPONENT ];
 
 	for( int pivot = 0; pivot < semivariances.size() - 2; pivot++ )
 	{
@@ -265,6 +275,13 @@ void find_range_and_sill( vector < Semivariance* > semivariances, double* x_rang
 			y_max_value = YDV;
 			y_max_index = pivot;
 		}
+
+		// find the smallest semivariance, it will be our nugget
+		double x_SV = semivariances[ pivot ]->semivariance[ X_COMPONENT ];
+		double y_SV = semivariances[ pivot ]->semivariance[ Y_COMPONENT ];
+
+		*x_nugget = x_SV < *x_nugget ? x_SV : *x_nugget;
+		*y_nugget = y_SV < *y_nugget ? y_SV : *y_nugget;
 	}
 
 	*x_range = semivariances[ x_max_index ]->displacement;
@@ -272,6 +289,7 @@ void find_range_and_sill( vector < Semivariance* > semivariances, double* x_rang
 
 	*x_sill = semivariances[ x_max_index ]->semivariance[ X_COMPONENT ];
 	*y_sill = semivariances[ y_max_index ]->semivariance[ Y_COMPONENT ];
+
 }
 
 // This function takes the parameters of the exponential semivariance model.
@@ -290,13 +308,13 @@ double interpolate_exponential( double displacement, double nugget, double sill,
 }
 
 // Matrix Multiplication
-void matrix_multiply( double** A, double** B, double** C, int n )
+void matrix_multiply( double** A, double** B, double** C, int n, int m )
 {
 	int rowA, colA, rowB, colB;
 
 	for ( rowA = 0; rowA < n; rowA++ )
 	{
-		for ( colB = 0; colB < n; colB++ )
+		for ( colB = 0; colB < m; colB++ )
 		{
 			C[rowA][colB] = 0;
 
@@ -447,8 +465,166 @@ void matrixInverse(double **matrix, double **inverse, int n)
 	}
 }
 
+// This method takes the parameters for the wind model, and the input wind data.
+// It also takes the coordinates of a point and returns the wind vector component
+// for that point.
+double find_wind_component_at_point( int wind_component, double x, double y, double range, double sill, double nugget, vector< WindVector* > wind_data )
+{
+	// Create the matrices that are involved in the calculation of the wind data
+	int wind_data_size = wind_data.size();
+	double** inter_sv_matrix = new double* [ wind_data_size ];
+	double** inter_sv_inverse = new double* [ wind_data_size ];
+	double** zero_sv_matrix = new double* [ wind_data_size ];
+	double** weight_matrix = new double* [ wind_data_size ];
+
+	// fill the matrices with the semivariances for the relevant points
+	for ( int i = 0; i < wind_data_size; i++ )
+	{
+		inter_sv_matrix[ i ] = new double [ wind_data_size ];
+		inter_sv_inverse[ i ] = new double [ wind_data_size ];
+		zero_sv_matrix[ i ] = new double [ 1 ];
+		weight_matrix[ i ] = new double [ 1 ];
+
+		double x1 = wind_data[ i ]->x;
+		double y1 = wind_data[ i ]->y;
+
+		for ( int j = 0; j < wind_data_size; j++ )
+		{
+			// calculate semivariance between points i and j (i.e. sv_i,j)
+			double x2 = wind_data[ j ]->x;
+			double y2 = wind_data[ j ]->y;
+
+			double displacement = sqrt( pow( x1 - x2, 2 ) + pow( y1 - y2, 2 ) );
+
+			double temp_sv = interpolate_exponential( displacement, nugget, sill, range );
+
+			inter_sv_matrix[ i ][ j ] = temp_sv;
+		}
+
+		double displacement = sqrt( pow( x1 - x, 2 ) + pow( y1 - y, 2 ) );
+
+		double temp_sv = interpolate_exponential( displacement, nugget, sill, range );
+
+		zero_sv_matrix[ i ][ 0 ] = temp_sv;
+	}
+
+	// now we want to find the weights. Invert the inter_sv_matrix and multiply it with
+	// the zero_sv_matrix from the left
+	matrixInverse( inter_sv_matrix, inter_sv_inverse, wind_data_size );
+
+	matrix_multiply( inter_sv_inverse, zero_sv_matrix, weight_matrix, wind_data_size, 1 );
+
+	double wind_reading = 0;
+
+	for ( int i = 0; i < wind_data_size; i++ )
+	{
+		wind_reading += ( weight_matrix[ i ][ 0 ] * wind_data[ i ]->velocity[ wind_component ] );
+	}
+
+	return wind_reading;
+}
+
+vector< WindVector* > calculate_wind_at_all_points( int width, int height, double x_range, double x_sill, double x_nugget, double y_range, double y_sill, double y_nugget, vector< WindVector* > wind_data )
+{
+	vector< WindVector* > complete_wind_data;
+
+	for ( int i = 0; i < width; i++ )
+	{
+		for ( int j = 0; j < height; j++ )
+		{
+			double* wind_components = new double [ 2 ];
+			wind_components[ X_COMPONENT ] = find_wind_component_at_point( X_COMPONENT, i, j, x_range, x_sill, x_nugget, wind_data );
+			wind_components[ Y_COMPONENT ] = find_wind_component_at_point( Y_COMPONENT, i, j, y_range, y_sill, y_nugget, wind_data );
+
+			WindVector* wind = new WindVector( i, j, wind_components );
+
+			complete_wind_data.push_back( wind );
+		}
+	}
+}
+
 
 int main()
 {
+	string filename = "input.txt";
+	ifstream input_file ( filename.c_str() );
+	istringstream iss;
 
+	int map_x, map_y;
+	vector< WindVector* > input_wind_vectors;
+
+
+	// ------------------------------------------------------------------------------
+	// read the map size and the wind readings from the input file
+	// READ FILE
+	if ( input_file.is_open() )
+	{
+		string line;
+		vector<string> tokens;
+		int currentLine = 0;
+
+		while ( getline ( input_file, line ) )
+		{
+			iss.clear();
+			iss.str( line );
+
+			// the first line has the map width and height information
+			if ( currentLine == 0 )
+			{
+				iss >> map_x >> map_y;
+			}
+			// the other lines have the x, y coordinates and x y components of wind vectors
+			else 
+			{
+				int x, y;
+				double v[2];
+
+				iss >> x >> y >> v[0] >> v[1];
+
+				WindVector* wv = new WindVector( x, y, v );
+				input_wind_vectors.push_back( wv );
+
+				cout << "testing WindVector class:\n";
+				cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
+				for (int i = 0; i < 2; i++ )
+				{
+					cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
+				}	
+			}
+
+			currentLine++;
+		}
+
+		input_file.close();
+		iss.str("");
+	}
+	else 
+	{
+		cout << "File didn't open!\n"; 
+	}
+
+
+	// ------------------------------------------------------------------------------
+	// Find the semivariances at each point in the map
+	// Create the semivariances
+	vector< Semivariance* > semivariance_list = calculate_all_semivariances( test_input_vectors );
+	vector< Semivariance* > bucketed_semivariances;
+	int bucket_size = 1; // default bucket
+	double max_displacement = 0;
+	double x_range, x_sill, x_nugget, y_range, y_sill, y_nugget;
+
+	for( int i=0; i < semivariance_list.size(); i++ )
+	{
+		double current_displacement = semivariance_list[ i ].displacement;
+		max_displacement = current_displacement > max_displacement ? current_displacement : max_displacement;
+	}
+
+	// bucket the semivariances to reduce their number
+	// otherwise we have | wind readings |! semivariances
+	bucketed_semivariances = bucket_sort( int( max_displacement ), , semivariance_list, bucket_size );
+
+	// find range and sill of the displacement-semivariance graph
+	find_range_and_sill( bucketed_semivariances, &x_range, &x_sill, &x_nugget, &y_range, &y_sill, &y_nugget );
+
+	// create the 
 }

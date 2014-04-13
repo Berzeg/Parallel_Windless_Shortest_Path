@@ -46,12 +46,10 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 			// Create the semivariance object and add it to the list
 			Semivariance* newSemivariance = new Semivariance( displacement, gamma );
 
-			cout << "The semivariance created has displacement: " << newSemivariance->displacement << "\n";
 			semivariances.push_back( newSemivariance );
 		}
 	}
 
-	cout << "size of semivariances (in function): " << semivariances.size() << "\n";
 	return semivariances;
 }
 
@@ -317,13 +315,13 @@ void matrix_multiply( double** A, double** B, double** C, int n, int m )
 }
 
 // Print matrix as string
-void matrixPrint( double** M, int n )
+void matrixPrint( double** M, int n, int m )
 {
 	int i, j;
 
 	for ( i = 0; i < n; i++ )
 	{
-		for ( j = 0; j < n; j++ )
+		for ( j = 0; j < m; j++ )
 		{
 			cout << M[i][j] << ", ";
 		}
@@ -511,6 +509,20 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 		wind_reading += ( weight_matrix[ i ][ 0 ] * wind_data[ i ]->velocity[ wind_component ] );
 	}
 
+	// free memory of matrices involved
+	for (int i = 0; i < wind_data_size; i++ )
+	{
+		delete [] inter_sv_matrix[ i ];
+		delete [] inter_sv_inverse[ i ];
+		delete [] zero_sv_matrix[ i ];
+		delete [] weight_matrix[ i ];
+	}
+
+	delete [] inter_sv_inverse;
+	delete [] inter_sv_matrix;
+	delete [] zero_sv_matrix;
+	delete [] weight_matrix;
+
 	return wind_reading;
 }
 
@@ -531,52 +543,54 @@ vector< WindVector* > calculate_wind_at_all_points( int width, int height, doubl
 			complete_wind_data.push_back( wind );
 		}
 	}
+
+	return complete_wind_data;
 }
 
 
 int main(int argc, char * argv[])
 {
-	/*double velocity[] = { 9.0, 1.2 };
-	WindVector* wv = new WindVector( 1, 1, velocity );
+	// double velocity[] = { 9.0, 1.2 };
+	// WindVector* wv = new WindVector( 1, 1, velocity );
 
-	cout << "testing WindVector class:\n";
-	cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
-	for (int i = 0; i < 2; i++ )
-	{
-		cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
-	}	
-
-
-	double gamma[] = { 1.2, 3.4 };
-	Semivariance* sv = new Semivariance( 3.1, gamma );
-
-	cout << "Testing semivariance class: \n";
-	cout << "displacement: " << sv->displacement << "\n";
-	for (int i = 0; i < 2; i++ )
-	{
-		cout << "semivariance[" << i << "]: " << sv->semivariance[i] << "\n";
-	}
+	// cout << "testing WindVector class:\n";
+	// cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
+	// for (int i = 0; i < 2; i++ )
+	// {
+	// 	cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
+	// }	
 
 
-	// testing the semivariance method
-	// create another wind vector in order to establish a semivariance with wv
-	double velocity2[] = { 4.2, 3.3 };
-	WindVector* wv2 = new WindVector( 5, 7, velocity2 );
-	double velocity3[] = { 4.4, 9.1 };
-	WindVector* wv3 = new WindVector( 3, 12, velocity3 );
-	WindVector* wv4 = new WindVector( 12, 5, velocity3 );
+	// double gamma[] = { 1.2, 3.4 };
+	// Semivariance* sv = new Semivariance( 3.1, gamma );
 
-	vector< WindVector* > test_input_vectors;
-	test_input_vectors.push_back( wv );
-	test_input_vectors.push_back( wv2 );
-	test_input_vectors.push_back( wv3 );
-	test_input_vectors.push_back( wv4 );
+	// cout << "Testing semivariance class: \n";
+	// cout << "displacement: " << sv->displacement << "\n";
+	// for (int i = 0; i < 2; i++ )
+	// {
+	// 	cout << "semivariance[" << i << "]: " << sv->semivariance[i] << "\n";
+	// }
 
-	vector< Semivariance* > semivariance_vector = calculate_all_semivariances( test_input_vectors );
-	cout << "Testing the semivariance calculation method\n";
-	cout << "The number of semivariances calculated: " << semivariance_vector.size();
-	cout << "\nThe lag of the first semivariance: " << semivariance_vector[0]->displacement;
-	cout << "\nThe value of the northern semivariance: " << semivariance_vector[0]->semivariance[NORTH] << "\n";
+
+	// // testing the semivariance method
+	// // create another wind vector in order to establish a semivariance with wv
+	// double velocity2[] = { 4.2, 3.3 };
+	// WindVector* wv2 = new WindVector( 5, 7, velocity2 );
+	// double velocity3[] = { 4.4, 9.1 };
+	// WindVector* wv3 = new WindVector( 3, 12, velocity3 );
+	// WindVector* wv4 = new WindVector( 12, 5, velocity3 );
+
+	// vector< WindVector* > test_input_vectors;
+	// test_input_vectors.push_back( wv );
+	// test_input_vectors.push_back( wv2 );
+	// test_input_vectors.push_back( wv3 );
+	// test_input_vectors.push_back( wv4 );
+
+	// vector< Semivariance* > semivariance_vector = calculate_all_semivariances( test_input_vectors );
+	// cout << "Testing the semivariance calculation method\n";
+	// cout << "The number of semivariances calculated: " << semivariance_vector.size();
+	// cout << "\nThe lag of the first semivariance: " << semivariance_vector[0]->displacement;
+	// cout << "\nThe value of the northern semivariance: " << semivariance_vector[0]->semivariance[NORTH] << "\n";
 	
 
 	// Testing the bucketing function with 6 semivariances to which I've precalculated the 
@@ -584,97 +598,169 @@ int main(int argc, char * argv[])
 	// x1 = 56.7, y1 = 42
 	// x2 = 50.3, y2 = 58.3
 
-	double component_sv1[] = { 12, 34 };
-	double component_sv2[] = { 90, 13 };
-	double component_sv3[] = { 68, 79 };
-	double component_sv4[] = { 43, 65 };
-	double component_sv5[] = { 17, 28 };
-	double component_sv6[] = { 91, 82 };
+	// double component_sv1[] = { 12, 34 };
+	// double component_sv2[] = { 90, 13 };
+	// double component_sv3[] = { 68, 79 };
+	// double component_sv4[] = { 43, 65 };
+	// double component_sv5[] = { 17, 28 };
+	// double component_sv6[] = { 91, 82 };
 
-	Semivariance* sv1 = new Semivariance( 2, component_sv1 );
-	Semivariance* sv2 = new Semivariance( 3, component_sv2 );
-	Semivariance* sv3 = new Semivariance( 4, component_sv3 );
-	Semivariance* sv4 = new Semivariance( 5, component_sv4 );
-	Semivariance* sv5 = new Semivariance( 6, component_sv5 );
-	Semivariance* sv6 = new Semivariance( 9, component_sv6 );
+	// Semivariance* sv1 = new Semivariance( 2, component_sv1 );
+	// Semivariance* sv2 = new Semivariance( 3, component_sv2 );
+	// Semivariance* sv3 = new Semivariance( 4, component_sv3 );
+	// Semivariance* sv4 = new Semivariance( 5, component_sv4 );
+	// Semivariance* sv5 = new Semivariance( 6, component_sv5 );
+	// Semivariance* sv6 = new Semivariance( 9, component_sv6 );
 
-	Semivariance* sv_array[] = { sv1, sv2, sv3, sv4, sv5, sv6 };
-	vector< Semivariance* > sv_collection( sv_array, sv_array + sizeof( sv_array ) / sizeof( Semivariance* ) );
+	// Semivariance* sv_array[] = { sv1, sv2, sv3, sv4, sv5, sv6 };
+	// vector< Semivariance* > sv_collection( sv_array, sv_array + sizeof( sv_array ) / sizeof( Semivariance* ) );
 
-	vector <Semivariance*> average_SVs = bucket_sort( 10, 5, sv_collection );
+	// vector <Semivariance*> average_SVs = bucket_sort( 10, 5, sv_collection );
 
-	//cout << "The components of the first SV are:\n";
-	//cout << "X_COMPONENT: " << average_SVs[0]->semivariance[ X_COMPONENT ] << ", Y_COMPONENT: " <<  average_SVs[0]->semivariance[ Y_COMPONENT ] <<  "\n";
-	//cout << "The components of the second SV are:\n";
-	//cout << "X-COMPONENT: " << average_SVs[1]->semivariance[ X_COMPONENT ] << ", Y-COMPONENT: " <<  average_SVs[1]->semivariance[ Y_COMPONENT ] << "\n";
+	// cout << "The components of the first SV are:\n";
+	// cout << "X_COMPONENT: " << average_SVs[0]->semivariance[ X_COMPONENT ] << ", Y_COMPONENT: " <<  average_SVs[0]->semivariance[ Y_COMPONENT ] <<  "\n";
+	// cout << "The components of the second SV are:\n";
+	// cout << "X-COMPONENT: " << average_SVs[1]->semivariance[ X_COMPONENT ] << ", Y-COMPONENT: " <<  average_SVs[1]->semivariance[ Y_COMPONENT ] << "\n";
 
 
-	// Testing the graph fitting functions
-	// The output should be the same as the above result
-	double XLMV, YLMV, XRMV, YRMV;
+	// // Testing the graph fitting functions
+	// // The output should be the same as the above result
+	// double XLMV, YLMV, XRMV, YRMV;
 
-	calculate_left_and_right_means( sv_collection, 2, &XLMV, &XRMV, &YLMV, &YRMV );
+	// calculate_left_and_right_means( sv_collection, 2, &XLMV, &XRMV, &YLMV, &YRMV );
 
-	cout << "After calculating the left and right means we've found:\n";
-	cout << "XMLV = " << XLMV << ", YLMV = " << YLMV << ", XRMV = " << XRMV << ", YRMV = " << YRMV << "\n";
+	// cout << "After calculating the left and right means we've found:\n";
+	// cout << "XMLV = " << XLMV << ", YLMV = " << YLMV << ", XRMV = " << XRMV << ", YRMV = " << YRMV << "\n";
 
-	double xl_variance, yl_variance, xr_variance, yr_variance;
+	// double xl_variance, yl_variance, xr_variance, yr_variance;
 
-	calculate_left_and_right_variances( sv_collection, 2, XLMV, XRMV, YLMV, YRMV, &xl_variance, &yl_variance, &xr_variance, &yr_variance );
+	// calculate_left_and_right_variances( sv_collection, 2, XLMV, XRMV, YLMV, YRMV, &xl_variance, &yl_variance, &xr_variance, &yr_variance );
 
-	cout << "After calculating the left and right variances we've found:\n";
-	cout << "xl_variance = " << xl_variance << ", yl_variance = " << yl_variance << ", xr_variance = " << xr_variance << ", yr_variance = " << yr_variance << "\n";
+	// cout << "After calculating the left and right variances we've found:\n";
+	// cout << "xl_variance = " << xl_variance << ", yl_variance = " << yl_variance << ", xr_variance = " << xr_variance << ", yr_variance = " << yr_variance << "\n";
 
-	double x_range, y_range, x_sill, y_sill;
+	// double x_range, y_range, x_sill, y_sill;
 
-	find_range_and_sill( sv_collection, &x_range, &x_sill, &y_range, &y_sill );
+	// find_range_and_sill( sv_collection, &x_range, &x_sill, &y_range, &y_sill );
 
-	cout << "After calling the find_range_and_sill function on the sv_collection we got:\n";
-	cout << "x_range = " << x_range << ", y_range = " << y_range << ", x_sill = " << x_sill << ", y_sill = " << y_sill << "\n"; 
-*/
+	// cout << "After calling the find_range_and_sill function on the sv_collection we got:\n";
+	// cout << "x_range = " << x_range << ", y_range = " << y_range << ", x_sill = " << x_sill << ", y_sill = " << y_sill << "\n"; 
 
-	int i, j, n;
-	double **A, **B, **C, **Ci;
 
-	n = 3;
+	// // testing matrix multiplication
+	// int i, j, n;
+	// double **A, **B, **C, **Ci;
 
-	A = new double*[ n ];
-	B = new double*[ n ];
-	C = new double*[ n ];
+	// n = 3;
 
-	for ( i = 0; i < n; i++ )
+	// A = new double*[ n ];
+	// B = new double*[ n ];
+	// C = new double*[ n ];
+
+	// for ( i = 0; i < n; i++ )
+	// {
+	// 	A[ i ] = new double[ n ];
+	// 	B[ i ] = new double[ n ];
+	// 	C[ i ] = new double[ n ];
+	// }
+
+	// A[ 0 ][ 0 ] = 1;
+	// A[ 0 ][ 1 ] = 4;
+	// A[ 0 ][ 2 ] = 1;
+
+	// A[ 1 ][ 0 ] = 4;
+	// A[ 1 ][ 1 ] = 2;
+	// A[ 1 ][ 2 ] = 0;
+
+	// A[ 2 ][ 0 ] = 1;
+	// A[ 2 ][ 1 ] = 0;
+	// A[ 2 ][ 2 ] = -5;
+
+	// matrix_multiply( A, A, C, n, n );	
+
+	// cout << "Testing matrix multiplication method\nMultiplying A with itself. A:\n";
+	// matrixPrint( A, n );
+	// cout << "result of multiplication:\n";
+	// matrixPrint( C, n );
+
+	// cout << "Testing matrix inverse method. The inverse matrix is:\n";
+	// cout << "Remember I'm not transposing the matrix because we only have symmetric matrices in our application\n";
+
+	// matrixInverse( A, B, n );
+	// matrixPrint( B, n );
+	// matrix_multiply( A, B, C, n, n );
+
+	// cout << "This should be the identity matrix after multiplying the matrix with its inverse:\n";
+	// matrixPrint( C, n );
+
+
+	// Testing complete functionality on a 10x12 map
+	// first create the wind vectors
+	int size = 6;
+	const double Xs[] = { 1, 3, 3, 7, 9, 9 };
+	const double Ys[] = { 7, 11, 1, 9, 4, 1 };
+	const double windX[] = { 6, 3, 1, 3, 12, 7 };
+	const double windY[] = { 1, 1, 4, 10, 8, 2 };
+
+	vector<WindVector*> wind_vectors;
+
+	cout << "About to start filling wind_vector\n";
+
+	for ( int i = 0; i < size; i++ )
 	{
-		A[ i ] = new double[ n ];
-		B[ i ] = new double[ n ];
-		C[ i ] = new double[ n ];
+		double* temp_wind = new double [2];
+		temp_wind[ 0 ] = windX[ i ];
+		temp_wind[ 1 ] = windY[ i ];
+
+		WindVector* wv = new WindVector( Xs[ i ], Ys[ i ], temp_wind );
+		wind_vectors.push_back( wv );
 	}
 
-	A[ 0 ][ 0 ] = 1;
-	A[ 0 ][ 1 ] = 4;
-	A[ 0 ][ 2 ] = 1;
+	cout << "created wind_vectors\n";
 
-	A[ 1 ][ 0 ] = 4;
-	A[ 1 ][ 1 ] = 2;
-	A[ 1 ][ 2 ] = 0;
+	vector< Semivariance* > semivariance_list = calculate_all_semivariances( wind_vectors );
+	vector< Semivariance* > bucketed_semivariances;
+	int bucket_size = 1; // default bucket
+	double max_displacement = 0;
+	double x_range, x_sill, x_nugget, y_range, y_sill, y_nugget;
 
-	A[ 2 ][ 0 ] = 1;
-	A[ 2 ][ 1 ] = 0;
-	A[ 2 ][ 2 ] = -5;
+	for( int i=0; i < semivariance_list.size(); i++ )
+	{
+		double current_displacement = semivariance_list[ i ]->displacement;
+		max_displacement = current_displacement > max_displacement ? current_displacement : max_displacement;
+	}
 
-	matrix_multiply( A, A, C, n, n );	
+	bucketed_semivariances = bucket_sort( int( max_displacement ), bucket_size, semivariance_list );
 
-	cout << "Testing matrix multiplication method\nMultiplying A with itself. A:\n";
-	matrixPrint( A, n );
-	cout << "result of multiplication:\n";
-	matrixPrint( C, n );
+	cout << "Bucketed semivariances\n";
 
-	cout << "Testing matrix inverse method. The inverse matrix is:\n";
-	cout << "Remember I'm not transposing the matrix because we only have symmetric matrices in our application\n";
+	find_range_and_sill( bucketed_semivariances, &x_range, &x_sill, &x_nugget, &y_range, &y_sill, &y_nugget );
 
-	matrixInverse( A, B, n );
-	matrixPrint( B, n );
-	matrix_multiply( A, B, C, n, n );
+	cout << "Modelled semivariances\n";
 
-	cout << "This should be the identity matrix after multiplying the matrix with its inverse:\n";
-	matrixPrint( C, n );
+	vector< WindVector* > complete_wind_model = calculate_wind_at_all_points( 10, 12, x_range, x_sill, x_nugget, y_range, y_sill, y_nugget, wind_vectors );
+
+	cout << "Calculated whole wind model\n";
+
+	// print the outputted wind model
+	double** x_wind = new double* [ 12 ];
+	double** y_wind = new double* [ 12 ];
+
+	for ( int i = 0; i < 12; i++ )
+	{
+		x_wind[ i ] = new double [ 10 ];
+		y_wind[ i ] = new double [ 10 ];
+	}
+
+	for ( int i = 0; i < complete_wind_model.size(); i++ )
+	{
+		int row = complete_wind_model[ i ]->y;
+		int col = complete_wind_model[ i ]->x;
+
+		x_wind[ row ][ col ] = complete_wind_model[ i ]->velocity[ X_COMPONENT ];
+		y_wind[ row ][ col ] = complete_wind_model[ i ]->velocity[ Y_COMPONENT ];
+	}
+
+	matrixPrint( x_wind, 12, 10 );
+	matrixPrint( y_wind, 12, 10 );
 }

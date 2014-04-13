@@ -56,12 +56,10 @@ vector < Semivariance* > calculate_all_semivariances( vector< WindVector* > &inp
 			// Create the semivariance object and add it to the list
 			Semivariance* newSemivariance = new Semivariance( displacement, gamma );
 
-			cout << "The semivariance created has displacement: " << newSemivariance->displacement << "\n";
 			semivariances.push_back( newSemivariance );
 		}
 	}
 
-	cout << "size of semivariances (in function): " << semivariances.size() << "\n";
 	return semivariances;
 }
 
@@ -327,13 +325,13 @@ void matrix_multiply( double** A, double** B, double** C, int n, int m )
 }
 
 // Print matrix as string
-void matrixPrint( double** M, int n )
+void matrixPrint( double** M, int n, int m )
 {
 	int i, j;
 
 	for ( i = 0; i < n; i++ )
 	{
-		for ( j = 0; j < n; j++ )
+		for ( j = 0; j < m; j++ )
 		{
 			cout << M[i][j] << ", ";
 		}
@@ -521,6 +519,20 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 		wind_reading += ( weight_matrix[ i ][ 0 ] * wind_data[ i ]->velocity[ wind_component ] );
 	}
 
+	// free memory of matrices involved
+	for (int i = 0; i < wind_data_size; i++ )
+	{
+		delete [] inter_sv_matrix[ i ];
+		delete [] inter_sv_inverse[ i ];
+		delete [] zero_sv_matrix[ i ];
+		delete [] weight_matrix[ i ];
+	}
+
+	delete [] inter_sv_inverse;
+	delete [] inter_sv_matrix;
+	delete [] zero_sv_matrix;
+	delete [] weight_matrix;
+
 	return wind_reading;
 }
 
@@ -541,6 +553,8 @@ vector< WindVector* > calculate_wind_at_all_points( int width, int height, doubl
 			complete_wind_data.push_back( wind );
 		}
 	}
+
+	return complete_wind_data;
 }
 
 
@@ -615,13 +629,13 @@ int main()
 
 	for( int i=0; i < semivariance_list.size(); i++ )
 	{
-		double current_displacement = semivariance_list[ i ].displacement;
+		double current_displacement = semivariance_list[ i ]->displacement;
 		max_displacement = current_displacement > max_displacement ? current_displacement : max_displacement;
 	}
 
 	// bucket the semivariances to reduce their number
 	// otherwise we have | wind readings |! semivariances
-	bucketed_semivariances = bucket_sort( int( max_displacement ), , semivariance_list, bucket_size );
+	bucketed_semivariances = bucket_sort( int( max_displacement ), bucket_size, semivariance_list );
 
 	// find range and sill of the displacement-semivariance graph
 	find_range_and_sill( bucketed_semivariances, &x_range, &x_sill, &x_nugget, &y_range, &y_sill, &y_nugget );

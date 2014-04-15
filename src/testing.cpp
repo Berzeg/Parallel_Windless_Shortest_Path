@@ -526,25 +526,87 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	return wind_reading;
 }
 
-vector< WindVector* > calculate_wind_at_all_points( int width, int height, double x_range, double x_sill, double x_nugget, double y_range, double y_sill, double y_nugget, vector< WindVector* > wind_data )
+double*** calculate_wind_at_all_points( int width, int height, double x_range, double x_sill, double x_nugget, double y_range, double y_sill, double y_nugget, vector< WindVector* > wind_data )
 {
 	vector< WindVector* > complete_wind_data;
+	double*** windMaps = new double** [ 2 ];
+	windMaps[ 0 ] = new double*[ height ];
+	windMaps[ 1 ] = new double*[ height ];
 
-	for ( int i = 0; i < width; i++ )
+	for ( int row = 0; row < height; row++ )
 	{
-		for ( int j = 0; j < height; j++ )
+		windMaps[ 0 ][ row ] = new double[ width ];
+		windMaps[ 1 ][ row ] = new double[ width ];
+
+		for ( int col = 0; col < width; col++ )
 		{
-			double* wind_components = new double [ 2 ];
-			wind_components[ X_COMPONENT ] = find_wind_component_at_point( X_COMPONENT, i, j, x_range, x_sill, x_nugget, wind_data );
-			wind_components[ Y_COMPONENT ] = find_wind_component_at_point( Y_COMPONENT, i, j, y_range, y_sill, y_nugget, wind_data );
-
-			WindVector* wind = new WindVector( i, j, wind_components );
-
-			complete_wind_data.push_back( wind );
+			windMaps[0][row][col] = find_wind_component_at_point( X_COMPONENT, col, row, x_range, x_sill, x_nugget, wind_data );
+			windMaps[1][row][col] = find_wind_component_at_point( Y_COMPONENT, col, row, y_range, y_sill, y_nugget, wind_data );
 		}
 	}
 
-	return complete_wind_data;
+	return windMaps;
+}
+
+
+// Create a width x height x 8 matrix that holds the weights for each cell and its 8 neighbours
+double*** create_cost_matrix( int width, int height, double*** wind_model )
+{
+	double*** cost_matrix = new double** [ height ];
+
+	double max_wind = 0;
+
+	// find the maximum wind reading to avoid having negative weights
+	for ( int i = 0; i < height; i++ )
+	{
+		for ( int j = 0; j < width; j++ )
+		{
+			double current_wind = sqrt( pow( wind_model[0][i][j], 2 ) + pow( wind_model[1][i][j], 2 ) );
+		
+			max_wind = max_wind > current_wind ? max_wind : current_wind;	
+		}
+	}
+
+	// set the weights for each direction for each node
+	for ( int i = 0; i < height; i++ )
+	{
+		cost_matrix[ i ] = new double* [ width ];
+
+		for ( int j = 0; j < width; j++ )
+		{
+			cost_matrix[ i ][ j ] = new double [ 9 ];
+
+			for ( int k = -1; k < 2; k++ )
+			{
+				for ( int l = -1; l < 2; l++ )
+				{
+					int new_row = i + k;
+					int new_col = j + l;
+					int direction_index = (k + 1) * 3 + (l + 1);
+
+					if ( !( k==0 && l==0 ) && ( new_row >= 0 && new_row < height ) && ( new_col >= 0 && new_col < width ))
+					{
+						double current_wind = sqrt( pow( wind_model[0][i][j], 2 ) + pow( wind_model[1][i][j], 2 ) );
+						double displacement = direction_index % 2 == 0 ? sqrt( 2 ) : 1;
+
+						// find the projection of the wind onto the path of movement
+						double wind_projection_along_path = l * wind_model[0][i][j] + k * wind_model[1][i][j];
+						int sign = wind_projection_along_path >= 0 ? 1 : -1;
+
+						// find the angle between the wind and the path of movement
+						double theta = acos( wind_projection_along_path / ( displacement * current_wind ));
+
+						// find the projection of the wind perpendicular to the path of movement
+						double wind_projection_perpendicular_to_path = current_wind * displacement * cos( 180 - theta );
+
+						cost_matrix[ i ][ j ][ direction_index ] = 1 + sign * pow( wind_projection_along_path / ( displacement * max_wind ), 2 ) + 1 + pow( wind_projection_perpendicular_to_path / ( displacement * max_wind ), 2);
+					}
+				}
+			}
+		}
+	}
+
+	return cost_matrix;
 }
 
 
@@ -699,8 +761,8 @@ int main(int argc, char * argv[])
 	int size = 6;
 	const double Xs[] = { 1, 3, 3, 7, 9, 9 };
 	const double Ys[] = { 7, 11, 1, 9, 4, 1 };
-	const double windX[] = { 6, 3, 1, 3, 12, 7 };
-	const double windY[] = { 1, 1, 4, 10, 8, 2 };
+	const double windX[] = { 6, -3, 1, -3, 12, 7 };
+	const double windY[] = { 1, 1, 4, -10, 8, 2 };
 
 	vector<WindVector*> wind_vectors;
 
@@ -738,29 +800,42 @@ int main(int argc, char * argv[])
 
 	cout << "Modelled semivariances\n";
 
-	vector< WindVector* > complete_wind_model = calculate_wind_at_all_points( 10, 12, x_range, x_sill, x_nugget, y_range, y_sill, y_nugget, wind_vectors );
+	double*** complete_wind_model = calculate_wind_at_all_points( 10, 12, x_range, x_sill, x_nugget, y_range, y_sill, y_nugget, wind_vectors );
 
 	cout << "Calculated whole wind model\n";
 
-	// print the outputted wind model
-	double** x_wind = new double* [ 12 ];
-	double** y_wind = new double* [ 12 ];
+	//matrixPrint( complete_wind_model[0], 12, 10 );
+	//matrixPrint( complete_wind_model[1], 12, 10 );
+
+	// Testing out the weighting for the wind_model
+	double*** weights_matrix = create_cost_matrix( 10, 12, complete_wind_model );
+
+	cout << "The weights for the wind_model are:\n\n";
 
 	for ( int i = 0; i < 12; i++ )
 	{
-		x_wind[ i ] = new double [ 10 ];
-		y_wind[ i ] = new double [ 10 ];
+		for ( int j = 0; j < 10; j++ )
+		{
+			cout << "looking at cell " << i << "x" << j << ": \n"; 
+
+			for ( int k = -1; k < 2; k++ )
+			{
+				for ( int l = -1; l < 2; l++ )
+				{
+					int new_row = i + k;
+					int new_col = j + l;
+					int direction_index = (k + 1) * 3 + (l + 1);
+
+					if ( !( k==0 && l==0 ) && ( new_row >= 0 && new_row < 12 ) && ( new_col >= 0 && new_col < 10 ))
+					{
+						cout << weights_matrix[ i ][ j ][ direction_index ] << "; ";
+					}
+				}
+
+				cout << "\n";
+			}
+
+			cout << "-----------\n";
+		}
 	}
-
-	for ( int i = 0; i < complete_wind_model.size(); i++ )
-	{
-		int row = complete_wind_model[ i ]->y;
-		int col = complete_wind_model[ i ]->x;
-
-		x_wind[ row ][ col ] = complete_wind_model[ i ]->velocity[ X_COMPONENT ];
-		y_wind[ row ][ col ] = complete_wind_model[ i ]->velocity[ Y_COMPONENT ];
-	}
-
-	matrixPrint( x_wind, 12, 10 );
-	matrixPrint( y_wind, 12, 10 );
 }

@@ -609,6 +609,126 @@ double*** create_cost_matrix( int width, int height, double*** wind_model )
 	return cost_matrix;
 }
 
+// given the weight matrix find the shortest path linking the source and destination points
+// using Dijkstra's algorithm
+// I followed (and modified) the wikipedia pseudocode for Dijkstra: http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+vector< vector< int > > find_shortest_path( int width, int height, int source_x, int source_y, int dest_x, int dest_y, double*** weight_matrix )
+{
+	int num_properties = 3;
+	enum property { DISTANCE, PREV_X, PREV_Y };
+	double*** properties_matrix = new double** [ num_properties ];
+	vector<int> Q;
+
+	for ( int property = 0; property < num_properties; property++ )
+	{
+		properties_matrix[ property ] = new double* [ height ];
+	}
+
+	// set up the default starting values for each node
+	for ( int i = 0; i < height; i++ )
+	{
+		for ( int property = 0; property < num_properties; property++ )
+		{
+			properties_matrix[ property ][ i ] = new double [ width ];
+		}
+
+		for ( int j = 0; j < width; j++ )
+		{
+			properties_matrix[ DISTANCE ][ i ][ j ] = INFINITY;
+			properties_matrix[ PREV_X ][ i ][ j ] = -1;
+			properties_matrix[ PREV_Y ][ i ][ j ] = -1;
+
+			Q.push_back( i * height + j );
+		}
+	}
+
+	properties_matrix[ DISTANCE ][ source_y ][ source_x ] = 0;
+
+
+	// implement Dijkstra
+	while ( Q.size() != 0 )
+	{
+		int min_row = Q[ 0 ] / height;
+		int min_col = Q[ 0 ] % width;
+		int min_index = 0;
+
+		double min_dist = properties_matrix[ DISTANCE ][ min_row ][ min_col ];
+
+		for ( int i = 0; i < Q.size(); i++ )
+		{
+			int row = Q[ i ] / height;
+			int col = Q[ i ] % width;
+			double current_dist = properties_matrix[ DISTANCE ][ row ][ col ];
+
+
+			if ( min_dist > current_dist )
+			{
+				min_row = row;
+				min_col = col;
+				min_index = i;
+				min_dist = current_dist;
+			}
+		}
+
+		Q.erase( Q.begin() + min_index );
+
+		if ( min_dist == INFINITY )
+		{
+			break;
+		}
+
+		for ( int k = -1; k < 2; k++ )
+		{
+			for ( int l = -1; l < 2; l++ )
+			{
+				int new_row = min_row + k;
+				int new_col = min_col + l;
+				int direction_index = (k + 1) * 3 + (l + 1);
+
+				if ( !( k==0 && l==0 ) && ( new_row >= 0 && new_row < height ) && ( new_col >= 0 && new_col < width ))
+				{
+					double alt_dist = min_dist + weight_matrix[ new_row ][ new_col ][ direction_index ];
+					double v_dist = properties_matrix[ DISTANCE ][ new_row ][ new_col ];
+
+					if ( alt_dist < v_dist )
+					{
+						properties_matrix[ DISTANCE ][ new_row ][ new_col ] = alt_dist;
+						properties_matrix[ PREV_X ][ new_row ][ new_col ] = min_col;
+						properties_matrix[ PREV_Y ][ new_row ][ new_col ] = min_row;
+					}
+				}
+			}
+		}
+	}
+
+	vector< int > x_path;
+	vector< int > y_path;
+
+	x_path.push_back( dest_x );
+	y_path.push_back( dest_y );
+
+	int prev_x = properties_matrix[ PREV_X ][ dest_y ][ dest_x ];
+	int prev_y = properties_matrix[ PREV_Y ][ dest_y ][ dest_x ];
+
+	while ( !( prev_x == source_x ) && !( prev_y == source_y ))
+	{
+		x_path.insert( x_path.begin(), prev_x );
+		y_path.insert( y_path.begin(), prev_y );
+
+		prev_x = properties_matrix[ PREV_X ][ prev_y ][ prev_x ];
+		prev_y = properties_matrix[ PREV_Y ][ prev_y ][ prev_x ];
+	}
+
+	x_path.insert( x_path.begin(), source_x );
+	y_path.insert( y_path.begin(), source_y );
+
+	vector< vector< int > > path;
+	path.push_back( x_path );
+	path.push_back( y_path );
+
+	return path;
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -812,30 +932,40 @@ int main(int argc, char * argv[])
 
 	cout << "The weights for the wind_model are:\n\n";
 
-	for ( int i = 0; i < 12; i++ )
+	// for ( int i = 0; i < 12; i++ )
+	// {
+	// 	for ( int j = 0; j < 10; j++ )
+	// 	{
+	// 		cout << "looking at cell " << i << "x" << j << ": \n"; 
+
+	// 		for ( int k = -1; k < 2; k++ )
+	// 		{
+	// 			for ( int l = -1; l < 2; l++ )
+	// 			{
+	// 				int new_row = i + k;
+	// 				int new_col = j + l;
+	// 				int direction_index = (k + 1) * 3 + (l + 1);
+
+	// 				if ( !( k==0 && l==0 ) && ( new_row >= 0 && new_row < 12 ) && ( new_col >= 0 && new_col < 10 ))
+	// 				{
+	// 					cout << weights_matrix[ i ][ j ][ direction_index ] << "; ";
+	// 				}
+	// 			}
+
+	// 			cout << "\n";
+	// 		}
+
+	// 		cout << "-----------\n";
+	// 	}
+	// }
+
+	// testing the dijkstra function
+	cout << "This function returns the dijkstra shortest path from point (2, 1) to (7, 8)\n";
+
+	vector< vector< int > > path =  find_shortest_path( 10, 12, 2, 1, 7, 8, weights_matrix );
+
+	for ( int i = 0; i < path[ 0 ].size(); i++ )
 	{
-		for ( int j = 0; j < 10; j++ )
-		{
-			cout << "looking at cell " << i << "x" << j << ": \n"; 
-
-			for ( int k = -1; k < 2; k++ )
-			{
-				for ( int l = -1; l < 2; l++ )
-				{
-					int new_row = i + k;
-					int new_col = j + l;
-					int direction_index = (k + 1) * 3 + (l + 1);
-
-					if ( !( k==0 && l==0 ) && ( new_row >= 0 && new_row < 12 ) && ( new_col >= 0 && new_col < 10 ))
-					{
-						cout << weights_matrix[ i ][ j ][ direction_index ] << "; ";
-					}
-				}
-
-				cout << "\n";
-			}
-
-			cout << "-----------\n";
-		}
+		cout << "The " << i << "th node is: (" << path[ 0 ][ i ] << ", " << path[ 1 ][ i ] << ")\n";
 	}
 }

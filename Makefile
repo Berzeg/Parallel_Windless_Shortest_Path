@@ -1,7 +1,7 @@
 CC := g++
-TARGET := test
+TARGET := sequential_kriging
 
-SOURCE := testing.cpp WindVector.cpp Semivariance.cpp
+SOURCE := sequential_kriging.cpp WindVector.cpp Semivariance.cpp
 FIXSOURCE := $(addprefix src/, $(SOURCE))
 
 VPATH := src : include
@@ -14,4 +14,5 @@ clean:
 	@rm -f $(TARGET) $(OBJECTS)
  
 all: $(SOURCE)
-	$(CC) $(FIXSOURCE) -o $(TARGET)
+	$(CC) $(FIXSOURCE) -o $(TARGET) 
+	# $(CC) $(FIXSOURCE) -o $(TARGET) -std=gnu++0x

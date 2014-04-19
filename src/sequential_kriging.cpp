@@ -15,10 +15,12 @@ The output of the program is a 2D array with original and interpolated vector va
 #include <string> /* string */
 #include <fstream> /* ifstream, ofstream */
 #include <sstream> /* istringstream, stringstream */
+// #include <chrono> 
 
 
 
 using namespace std;
+// using namespace std::chrono;
 
 // Given a list of the initial data points this
 // function calculates the semivariance between
@@ -466,7 +468,7 @@ void matrixInverse(double **matrix, double **inverse, int n)
 // This method takes the parameters for the wind model, and the input wind data.
 // It also takes the coordinates of a point and returns the wind vector component
 // for that point.
-double find_wind_component_at_point( int wind_component, double x, double y, double range, double sill, double nugget, vector< WindVector* > wind_data )
+double find_wind_component_at_point( int wind_component, double x, double y, double range, double sill, double nugget, vector< WindVector* > wind_data, int* svTime, int* matrixTime, int* restTime )
 {
 	// Create the matrices that are involved in the calculation of the wind data
 	int wind_data_size = wind_data.size();
@@ -475,13 +477,16 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	double** zero_sv_matrix = new double* [ wind_data_size ];
 	double** weight_matrix = new double* [ wind_data_size ];
 
+	// keeping track of the time spent on each part of this method
+	// auto time_sv1 = high_resolution_clock::now();
+
 	// fill the matrices with the semivariances for the relevant points
 	for ( int i = 0; i < wind_data_size; i++ )
 	{
-		inter_sv_matrix[ i ] = new double [ wind_data_size ];
-		inter_sv_inverse[ i ] = new double [ wind_data_size ];
-		zero_sv_matrix[ i ] = new double [ 1 ];
-		weight_matrix[ i ] = new double [ 1 ];
+		inter_sv_matrix[ i ] = new double [ wind_data_size ]; // the semivariances of the permutation of each pair of wind readings
+		inter_sv_inverse[ i ] = new double [ wind_data_size ]; // inverse of inter_sv_matrix
+		zero_sv_matrix[ i ] = new double [ 1 ]; // the semivariance between all known points and the point we want to estimate
+		weight_matrix[ i ] = new double [ 1 ]; // the values we want to find
 
 		double x1 = wind_data[ i ]->x;
 		double y1 = wind_data[ i ]->y;
@@ -506,6 +511,13 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 		zero_sv_matrix[ i ][ 0 ] = temp_sv;
 	}
 
+	// auto time_sv2 = high_resolution_clock::now();
+
+	// *svTime += chrono::duration_cast<std::chrono::microseconds>(time_sv2 - time_sv1).count();
+
+
+	// auto time_matrix1 = high_resolution_clock::now();
+
 	// now we want to find the weights. Invert the inter_sv_matrix and multiply it with
 	// the zero_sv_matrix from the left
 	matrixInverse( inter_sv_matrix, inter_sv_inverse, wind_data_size );
@@ -513,6 +525,13 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	matrix_multiply( inter_sv_inverse, zero_sv_matrix, weight_matrix, wind_data_size, 1 );
 
 	double wind_reading = 0;
+
+
+	// auto time_matrix2 = high_resolution_clock::now();
+
+	// *matrixTime += chrono::duration_cast<std::chrono::microseconds>(time_matrix2 - time_matrix1).count();
+
+	// auto time_rest1 = high_resolution_clock::now();
 
 	for ( int i = 0; i < wind_data_size; i++ )
 	{
@@ -533,6 +552,10 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	delete [] zero_sv_matrix;
 	delete [] weight_matrix;
 
+	// auto time_rest2 = high_resolution_clock::now();
+
+	// *restTime += chrono::duration_cast<std::chrono::microseconds>(time_rest2 - time_rest1).count();
+
 	return wind_reading;
 }
 
@@ -543,6 +566,11 @@ double*** calculate_wind_at_all_points( int width, int height, double x_range, d
 	windMaps[ 0 ] = new double*[ height ];
 	windMaps[ 1 ] = new double*[ height ];
 
+	// keep track of time
+	int svTime = 0;
+	int matrixTime = 0;
+	int restTime = 0;
+
 	for ( int row = 0; row < height; row++ )
 	{
 		windMaps[ 0 ][ row ] = new double[ width ];
@@ -550,10 +578,14 @@ double*** calculate_wind_at_all_points( int width, int height, double x_range, d
 
 		for ( int col = 0; col < width; col++ )
 		{
-			windMaps[0][row][col] = find_wind_component_at_point( X_COMPONENT, col, row, x_range, x_sill, x_nugget, wind_data );
-			windMaps[1][row][col] = find_wind_component_at_point( Y_COMPONENT, col, row, y_range, y_sill, y_nugget, wind_data );
+			windMaps[0][row][col] = find_wind_component_at_point( X_COMPONENT, col, row, x_range, x_sill, x_nugget, wind_data, &svTime, &matrixTime, &restTime );
+			windMaps[1][row][col] = find_wind_component_at_point( Y_COMPONENT, col, row, y_range, y_sill, y_nugget, wind_data, &svTime, &matrixTime, &restTime );
 		}
 	}
+
+	// cout << "Time setting up semivariances is: " << svTime << " microseconds\n";
+	// cout << "Time on matrix operations is: " << matrixTime << " microseconds\n";
+	// cout << "Time doing other stuff is: " << restTime << " microseconds\n";
 
 	return windMaps;
 }
@@ -720,13 +752,16 @@ vector< vector< int > > find_shortest_path( int width, int height, int source_x,
 	int prev_x = properties_matrix[ PREV_X ][ dest_y ][ dest_x ];
 	int prev_y = properties_matrix[ PREV_Y ][ dest_y ][ dest_x ];
 
-	while ( !( prev_x == source_x ) && !( prev_y == source_y ))
+	while ( !( prev_x == source_x && prev_y == source_y ) )
 	{
 		x_path.insert( x_path.begin(), prev_x );
 		y_path.insert( y_path.begin(), prev_y );
 
-		prev_x = properties_matrix[ PREV_X ][ prev_y ][ prev_x ];
-		prev_y = properties_matrix[ PREV_Y ][ prev_y ][ prev_x ];
+		int temp_prev_x = prev_x;
+		int temp_prev_y = prev_y;
+
+		prev_x = properties_matrix[ PREV_X ][ temp_prev_y ][ temp_prev_x ];
+		prev_y = properties_matrix[ PREV_Y ][ temp_prev_y ][ temp_prev_x ];
 	}
 
 	x_path.insert( x_path.begin(), source_x );
@@ -746,6 +781,8 @@ int main()
 	istringstream iss;
 
 	int map_x, map_y;
+	int source_x, source_y;
+	int dest_x, dest_y;
 	vector< WindVector* > input_wind_vectors;
 
 
@@ -768,6 +805,16 @@ int main()
 			{
 				iss >> map_x >> map_y;
 			}
+			// the second line has the source location coordinates
+			else if ( currentLine == 1 )
+			{
+				iss >> source_x >> source_y;
+			}
+			// the third line has the destination location coordinates
+			else if ( currentLine == 2 )
+			{
+				iss >> dest_x >> dest_y;
+			}
 			// the other lines have the x, y coordinates and x y components of wind vectors
 			else 
 			{
@@ -779,12 +826,12 @@ int main()
 				WindVector* wv = new WindVector( x, y, v );
 				input_wind_vectors.push_back( wv );
 
-				cout << "testing WindVector class:\n";
-				cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
-				for (int i = 0; i < 2; i++ )
-				{
-					cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
-				}	
+				// cout << "testing WindVector class:\n";
+				// cout << "x: " << wv->x << "\ny: " << wv-> y << "\n";
+				// for (int i = 0; i < 2; i++ )
+				// {
+				// 	cout << "velocity[" << i << "]: " << wv->velocity[i] << "\n";
+				// }	
 			}
 
 			currentLine++;
@@ -802,7 +849,7 @@ int main()
 	// ------------------------------------------------------------------------------
 	// Find the semivariances at each point in the map
 	// Create the semivariances
-	vector< Semivariance* > semivariance_list = calculate_all_semivariances( test_input_vectors );
+	vector< Semivariance* > semivariance_list = calculate_all_semivariances( input_wind_vectors );
 	vector< Semivariance* > bucketed_semivariances;
 	int bucket_size = 1; // default bucket
 	double max_displacement = 0;
@@ -814,15 +861,69 @@ int main()
 		max_displacement = current_displacement > max_displacement ? current_displacement : max_displacement;
 	}
 
+	cout << "A\n";
+
 	// bucket the semivariances to reduce their number
 	// otherwise we have | wind readings |! semivariances
 	bucketed_semivariances = bucket_sort( int( max_displacement ), bucket_size, semivariance_list );
 
+	cout << "B\n";
+
 	// find range and sill of the displacement-semivariance graph
 	find_range_and_sill( bucketed_semivariances, &x_range, &x_sill, &x_nugget, &y_range, &y_sill, &y_nugget );
+
+	cout << "C\n";
 
 	// create the complete wind model
 	double*** complete_wind_model = calculate_wind_at_all_points( map_x, map_y, x_range, x_sill, x_nugget, y_range, y_sill, y_nugget, input_wind_vectors );
 
+	cout << "D\n";
 
+	// Find the dijkstra shortest path
+	// First, use your weights algorithm to create a weights array for each of the 8 edges
+	// around each node.
+	double*** weights_matrix = create_cost_matrix( map_x, map_y, complete_wind_model );
+
+	cout << "E\n";
+
+	// Next, apply dijkstra using the weights_matrix you just calculated
+	// You will get a vector with the x coordinates and another with the y-coordinates 
+	// of the path from the source to the destination, in order.
+	vector< vector< int > > shorteset_path = find_shortest_path( map_x, map_y, source_x, source_y, dest_x, dest_y, weights_matrix );
+
+	cout << "F\n";
+
+	// WRITE OUTPUTS TO FILE
+	// first, write path to a file
+	ofstream ofile;
+	string output_filename = "output_path.txt";
+
+	ofile.open( output_filename.c_str() );
+
+	for ( int i = 0; i < shorteset_path[ 0 ].size() ; i++ )
+	{
+		ofile << shorteset_path[ 0 ][ i ] << ", " << shorteset_path[ 1 ][ i ] << "\n";
+	}
+
+	ofile.close();
+
+	// next, write the wind_model to another file
+	output_filename = "output_wind.txt";
+
+	ofile.open( output_filename.c_str() );
+
+	ofile << map_x << ", " << map_y << "\n";
+
+	for ( int i = 0; i < map_y; i++ )
+	{
+		for ( int j = 0; j < map_x; j++ )
+		{
+			// write each wind vector as x_component,y_component x2,y2 ...
+			ofile << complete_wind_model[ 0 ][ i ][ j ] << "," << complete_wind_model[ 1 ][ i ][ j ] << " ";
+		}
+
+		ofile << "\n";
+	}
+
+	ofile.close();
 }

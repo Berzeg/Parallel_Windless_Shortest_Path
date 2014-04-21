@@ -52,8 +52,8 @@ if ( args.sim == 1 ):
 		reading_coordinates.append( (x, y) )
 
 		# add a random wind reading for each of the pre-specified coordinates
-		x_wind = random.uniform( 0, 40 )
-		y_wind = random.uniform( 0, 40 )
+		x_wind = random.uniform( -40, 40 )
+		y_wind = random.uniform( -40, 40 )
 
 		print( "{0} {1} {2} {3}".format( x, y, x_wind, y_wind ), file=input_file )
 

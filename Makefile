@@ -14,5 +14,5 @@ clean:
 	@rm -f $(TARGET) $(OBJECTS)
  
 all: $(SOURCE)
-	$(CC) $(FIXSOURCE) -o $(TARGET) 
-	# $(CC) $(FIXSOURCE) -o $(TARGET) -std=gnu++0x
+	# $(CC) $(FIXSOURCE) -o $(TARGET) 
+	$(CC) $(FIXSOURCE) -o $(TARGET) -std=gnu++0x

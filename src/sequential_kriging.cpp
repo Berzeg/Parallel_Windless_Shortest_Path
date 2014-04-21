@@ -15,12 +15,12 @@ The output of the program is a 2D array with original and interpolated vector va
 #include <string> /* string */
 #include <fstream> /* ifstream, ofstream */
 #include <sstream> /* istringstream, stringstream */
-// #include <chrono> 
+#include <chrono> 
 
 
 
 using namespace std;
-// using namespace std::chrono;
+using namespace std::chrono;
 
 // Given a list of the initial data points this
 // function calculates the semivariance between
@@ -478,7 +478,7 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	double** weight_matrix = new double* [ wind_data_size ];
 
 	// keeping track of the time spent on each part of this method
-	// auto time_sv1 = high_resolution_clock::now();
+	auto time_sv1 = high_resolution_clock::now();
 
 	// fill the matrices with the semivariances for the relevant points
 	for ( int i = 0; i < wind_data_size; i++ )
@@ -511,12 +511,12 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 		zero_sv_matrix[ i ][ 0 ] = temp_sv;
 	}
 
-	// auto time_sv2 = high_resolution_clock::now();
+	auto time_sv2 = high_resolution_clock::now();
 
-	// *svTime += chrono::duration_cast<std::chrono::microseconds>(time_sv2 - time_sv1).count();
+	*svTime += chrono::duration_cast<std::chrono::microseconds>(time_sv2 - time_sv1).count();
 
 
-	// auto time_matrix1 = high_resolution_clock::now();
+	auto time_matrix1 = high_resolution_clock::now();
 
 	// now we want to find the weights. Invert the inter_sv_matrix and multiply it with
 	// the zero_sv_matrix from the left
@@ -527,11 +527,11 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	double wind_reading = 0;
 
 
-	// auto time_matrix2 = high_resolution_clock::now();
+	auto time_matrix2 = high_resolution_clock::now();
 
-	// *matrixTime += chrono::duration_cast<std::chrono::microseconds>(time_matrix2 - time_matrix1).count();
+	*matrixTime += chrono::duration_cast<std::chrono::microseconds>(time_matrix2 - time_matrix1).count();
 
-	// auto time_rest1 = high_resolution_clock::now();
+	auto time_rest1 = high_resolution_clock::now();
 
 	for ( int i = 0; i < wind_data_size; i++ )
 	{
@@ -552,9 +552,9 @@ double find_wind_component_at_point( int wind_component, double x, double y, dou
 	delete [] zero_sv_matrix;
 	delete [] weight_matrix;
 
-	// auto time_rest2 = high_resolution_clock::now();
+	auto time_rest2 = high_resolution_clock::now();
 
-	// *restTime += chrono::duration_cast<std::chrono::microseconds>(time_rest2 - time_rest1).count();
+	*restTime += chrono::duration_cast<std::chrono::microseconds>(time_rest2 - time_rest1).count();
 
 	return wind_reading;
 }

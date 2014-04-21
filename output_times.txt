@@ -1,0 +1,6 @@
+Calculating all semivariances, 189
+Bucketing semivariances, 0
+Estimating the exponential semivariance function, 286
+Estimating wind for each point in graph, 106795859
+Calculating the scalar costs for Dijkstra's Algorithm, 2371
+Applying Dijkstra, 2693

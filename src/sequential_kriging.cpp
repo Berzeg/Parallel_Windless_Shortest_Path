@@ -785,6 +785,16 @@ int main()
 	int dest_x, dest_y;
 	vector< WindVector* > input_wind_vectors;
 
+	int times_size = 6;
+	vector<string> time_labels;
+	int* times_array = new int[ times_size ];
+	high_resolution_clock::time_point time1, time2;
+
+
+	for (int i = 0; i < times_size; i++)
+	{
+		times_array[ i ] = 0;
+	}
 
 	// ------------------------------------------------------------------------------
 	// read the map size and the wind readings from the input file
@@ -849,7 +859,16 @@ int main()
 	// ------------------------------------------------------------------------------
 	// Find the semivariances at each point in the map
 	// Create the semivariances
+
+	time_labels.push_back("Calculating all semivariances");
+
+	time1 = high_resolution_clock::now();
+
 	vector< Semivariance* > semivariance_list = calculate_all_semivariances( input_wind_vectors );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 0 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
 	vector< Semivariance* > bucketed_semivariances;
 	int bucket_size = 1; // default bucket
 	double max_displacement = 0;
@@ -865,64 +884,113 @@ int main()
 
 	// bucket the semivariances to reduce their number
 	// otherwise we have | wind readings |! semivariances
+	time_labels.push_back("Bucketing semivariances");
+
+	time1 = high_resolution_clock::now();
+
 	bucketed_semivariances = bucket_sort( int( max_displacement ), bucket_size, semivariance_list );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 1 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
 
 	cout << "B\n";
 
 	// find range and sill of the displacement-semivariance graph
+	time_labels.push_back("Estimating the exponential semivariance function");
+
+	time1 = high_resolution_clock::now();
+
 	find_range_and_sill( bucketed_semivariances, &x_range, &x_sill, &x_nugget, &y_range, &y_sill, &y_nugget );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 2 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	cout << "C\n";
 
 	// create the complete wind model
+	time_labels.push_back("Estimating wind for each point in graph");
+
+	time1 = high_resolution_clock::now();
+
 	double*** complete_wind_model = calculate_wind_at_all_points( map_x, map_y, x_range, x_sill, x_nugget, y_range, y_sill, y_nugget, input_wind_vectors );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 3 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	cout << "D\n";
 
 	// Find the dijkstra shortest path
 	// First, use your weights algorithm to create a weights array for each of the 8 edges
 	// around each node.
+	time_labels.push_back("Calculating the scalar costs for Dijkstra's Algorithm");
+
+	time1 = high_resolution_clock::now();
+
 	double*** weights_matrix = create_cost_matrix( map_x, map_y, complete_wind_model );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 4 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
 
 	cout << "E\n";
 
 	// Next, apply dijkstra using the weights_matrix you just calculated
 	// You will get a vector with the x coordinates and another with the y-coordinates 
 	// of the path from the source to the destination, in order.
+	time_labels.push_back("Applying Dijkstra");
+
+	time1 = high_resolution_clock::now();
+
 	vector< vector< int > > shorteset_path = find_shortest_path( map_x, map_y, source_x, source_y, dest_x, dest_y, weights_matrix );
+
+	time2 = high_resolution_clock::now();
+	times_array[ 5 ] += chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	cout << "F\n";
 
 	// WRITE OUTPUTS TO FILE
 	// first, write path to a file
+	// ofstream ofile;
+	// string output_filename = "output_path.txt";
+
+	// ofile.open( output_filename.c_str() );
+
+	// for ( int i = 0; i < shorteset_path[ 0 ].size() ; i++ )
+	// {
+	// 	ofile << shorteset_path[ 0 ][ i ] << ", " << shorteset_path[ 1 ][ i ] << "\n";
+	// }
+
+	// ofile.close();
+
+	// // next, write the wind_model to another file
+	// output_filename = "output_wind.txt";
+
+	// ofile.open( output_filename.c_str() );
+
+	// ofile << map_x << ", " << map_y << "\n";
+
+	// for ( int i = 0; i < map_y; i++ )
+	// {
+	// 	for ( int j = 0; j < map_x; j++ )
+	// 	{
+	// 		// write each wind vector as x_component,y_component x2,y2 ...
+	// 		ofile << complete_wind_model[ 0 ][ i ][ j ] << "," << complete_wind_model[ 1 ][ i ][ j ] << " ";
+	// 	}
+
+	// 	ofile << "\n";
+	// }
+
+	// ofile.close();
+
 	ofstream ofile;
-	string output_filename = "output_path.txt";
+	string output_filename = "output_times.txt";
 
 	ofile.open( output_filename.c_str() );
 
-	for ( int i = 0; i < shorteset_path[ 0 ].size() ; i++ )
+	for ( int i = 0; i < times_size; i++ )
 	{
-		ofile << shorteset_path[ 0 ][ i ] << ", " << shorteset_path[ 1 ][ i ] << "\n";
-	}
-
-	ofile.close();
-
-	// next, write the wind_model to another file
-	output_filename = "output_wind.txt";
-
-	ofile.open( output_filename.c_str() );
-
-	ofile << map_x << ", " << map_y << "\n";
-
-	for ( int i = 0; i < map_y; i++ )
-	{
-		for ( int j = 0; j < map_x; j++ )
-		{
-			// write each wind vector as x_component,y_component x2,y2 ...
-			ofile << complete_wind_model[ 0 ][ i ][ j ] << "," << complete_wind_model[ 1 ][ i ][ j ] << " ";
-		}
-
-		ofile << "\n";
+		ofile << time_labels[ i ] << ", " << times_array[ i ] << "\n";
 	}
 
 	ofile.close();
